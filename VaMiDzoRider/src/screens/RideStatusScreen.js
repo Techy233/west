@@ -1,9 +1,15 @@
 // VaMiDzoRider/src/screens/RideStatusScreen.js
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native'; // Added ScrollView, TouchableOpacity
+import { View, Text, StyleSheet, ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import apiClient from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import {
+    getSocket,
+    onRideAccepted, offRideAccepted,
+    onRideStatusUpdated, offRideStatusUpdated,
+    onRideCancelledByDriver, offRideCancelledByDriver
+} from '../services/socketService'; // Import socket listeners
 
 // Reusable Button
 const CustomButton = ({ title, onPress, style, textStyle, disabled }) => (
@@ -99,18 +105,48 @@ const RideStatusScreen = ({ route, navigation }) => {
         if (rideId) {
             fetchRideStatus(); // Initial fetch
 
-            // Set up polling
-            const intervalId = setInterval(() => {
-                console.log("Polling for ride status update...");
-                // Avoid setting global isLoading to true for background polls,
-                // unless you want a global loading indicator.
-                // For now, fetchRideStatus handles its own loading state for the content.
-                fetchRideStatus();
-            }, 15000); // Poll every 15 seconds
+            // WebSocket listeners for real-time updates
+            const handleRideAccepted = (acceptedRideData) => {
+                console.log('RideStatusScreen: ride_accepted event', acceptedRideData);
+                if (acceptedRideData.ride_id === rideId) {
+                    setRideDetails(prev => ({ ...prev, ...acceptedRideData, status: 'accepted' }));
+                    Alert.alert("Ride Update", "Your ride has been accepted by a driver!");
+                }
+            };
+            const handleRideStatusUpdate = (updatedRideData) => {
+                console.log('RideStatusScreen: ride_status_updated event', updatedRideData);
+                if (updatedRideData.ride_id === rideId) {
+                    setRideDetails(prev => ({ ...prev, ...updatedRideData })); // Update with all new details
+                    Alert.alert("Ride Update", `Your ride status is now: ${updatedRideData.status.replace('_', ' ')}`);
+                }
+            };
+            const handleRideCancelledByDrv = (data) => {
+                console.log('RideStatusScreen: ride_cancelled_by_driver event', data);
+                 if (data.rideId === rideId) {
+                    setRideDetails(prev => ({ ...prev, status: 'cancelled_driver' }));
+                    Alert.alert("Ride Cancelled", data.message || "Your ride was cancelled by the driver.");
+                    // Optionally navigate away or show a "find new ride" button
+                }
+            };
 
-            return () => clearInterval(intervalId); // Cleanup interval on unmount
+            onRideAccepted(handleRideAccepted);
+            onRideStatusUpdated(handleRideStatusUpdate);
+            onRideCancelledByDriver(handleRideCancelledByDrv);
+
+            // Remove polling if WebSockets are primary
+            // const intervalId = setInterval(() => {
+            //     console.log("Polling for ride status update...");
+            //     fetchRideStatus();
+            // }, 15000);
+
+            return () => {
+                // clearInterval(intervalId);
+                offRideAccepted(handleRideAccepted);
+                offRideStatusUpdated(handleRideStatusUpdate);
+                offRideCancelledByDriver(handleRideCancelledByDrv);
+            };
         }
-    }, [rideId]); // Dependency array includes rideId
+    }, [rideId]);
 
 
     const handleCancelRide = async () => {
@@ -250,32 +286,58 @@ const RideStatusScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    scrollView: { flex: 1, backgroundColor: '#f7f7f7' },
-    container: { padding: 20, paddingBottom: 40 },
+    scrollView: { flex: 1, backgroundColor: '#E9F5FF' }, // Consistent light sky blue
+    container: { paddingHorizontal: 20, paddingVertical: 20, paddingBottom: 40 },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    title: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 5, textAlign: 'center' },
-    rideIdText: { fontSize: 12, color: 'gray', textAlign: 'center', marginBottom: 10}, // Reduced margin
+    title: { fontSize: 28, fontWeight: 'bold', color: '#007AFF', marginBottom: 8, textAlign: 'center' }, // Primary blue
+    rideIdText: { fontSize: 13, color: '#7f8c8d', textAlign: 'center', marginBottom: 20}, // Asbestos
     map: {
         width: '100%',
-        height: 200, // Adjust as needed
-        borderRadius: 8,
-        marginBottom: 15,
+        height: 220, // Slightly larger
+        borderRadius: 10, // Consistent rounding
+        marginBottom: 20, // More space
+        borderWidth: 1,
+        borderColor: '#CFD8DC', // Blue Grey 100
     },
-    statusCard: { padding: 15, backgroundColor: '#fff', borderRadius: 8, marginBottom: 20, elevation: 2, flexDirection: 'row', alignItems: 'center' },
-    statusLabel: { fontSize: 16, fontWeight: '500', color: '#333'},
-    statusValue: { fontSize: 16, color: '#007bff', marginLeft: 8, flexShrink: 1 },
-    detailsCard: { padding: 15, backgroundColor: '#fff', borderRadius: 8, marginBottom: 20, elevation: 2 },
-    cardTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-    detailItem: { fontSize: 15, color: '#444', marginBottom: 5 },
-    errorTextGlobal: { color: 'red', marginBottom: 15, fontSize: 14, textAlign: 'center' },
-    // Base styles
-    buttonBase: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center', minHeight: 48, marginBottom:10 },
-    buttonTextBase: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    buttonDisabled: { backgroundColor: '#ccc' },
-    refreshButton: { backgroundColor: '#17a2b8' }, // Teal
-    cancelButton: { backgroundColor: '#dc3545' },  // Red
-    homeButton: { backgroundColor: 'gray' }
+    statusCard: {
+        padding: 18, // More padding
+        backgroundColor: '#ffffff',
+        borderRadius: 10,
+        marginBottom: 20,
+        elevation: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000', shadowOffset: { width:0, height:1}, shadowOpacity: 0.05, shadowRadius:2,
+    },
+    statusLabel: { fontSize: 17, fontWeight: '600', color: '#2c3e50'}, // Darker blue/grey
+    statusValue: { fontSize: 17, color: '#007AFF', marginLeft: 10, flexShrink: 1, fontWeight: '500' }, // Primary blue
+    detailsCard: {
+        padding: 18,
+        backgroundColor: '#ffffff',
+        borderRadius: 10,
+        marginBottom: 20,
+        elevation: 2,
+        shadowColor: '#000', shadowOffset: { width:0, height:1}, shadowOpacity: 0.05, shadowRadius:2,
+    },
+    cardTitle: { fontSize: 19, fontWeight: 'bold', marginBottom: 12, color: '#34495e' }, // Wet asphalt
+    detailItem: { fontSize: 16, color: '#34495e', marginBottom: 7, lineHeight: 22 },
+    errorTextGlobal: { color: '#D32F2F', marginBottom: 18, fontSize: 15, textAlign: 'center', fontWeight: '500' },
+    // Base styles from LoginScreen for consistency
+    buttonBase: {
+        paddingVertical: 14, // Taller buttons
+        paddingHorizontal: 20,
+        borderRadius: 25, // Rounded
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 50,
+        marginBottom:12, // Space between buttons
+        width: '100%', // Full width for action buttons
+    },
+    buttonTextBase: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    buttonDisabled: { backgroundColor: '#B0BEC5' }, // Blue Grey 200
+    refreshButton: { backgroundColor: '#1abc9c' }, // Turquoise
+    cancelButton: { backgroundColor: '#e74c3c' },  // Alizarin red
+    homeButton: { backgroundColor: '#95a5a6', marginTop: 10 } // Asbestos
 });
-// import { TouchableOpacity } from 'react-native'; // Already imported at the top
 
 export default RideStatusScreen;

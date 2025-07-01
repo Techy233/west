@@ -118,81 +118,92 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     keyboardAvoidingContainer: {
         flex: 1,
-        backgroundColor: '#f7f7f7',
+        backgroundColor: '#E9F5FF', // Light sky blue background
     },
     scrollContainer: {
         flexGrow: 1,
         justifyContent: 'center',
+        paddingBottom: 20, // Ensure space at bottom if keyboard is up
     },
     container: {
-        padding: 25,
-        alignItems: 'center',
+        paddingHorizontal: 30, // More horizontal padding
+        alignItems: 'stretch', // Stretch items like buttons
     },
     title: {
-        fontSize: 28,
+        fontSize: 32, // Larger title
         fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 10,
+        color: '#007AFF', // Primary blue
+        marginBottom: 15,
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 30,
+        fontSize: 17, // Slightly larger
+        color: '#555', // Darker grey
+        marginBottom: 35, // More space after subtitle
         textAlign: 'center',
+        lineHeight: 24,
     },
-    inputField: {
-        marginBottom: 20,
-        width: '100%',
+    inputField: { // This style is for the wrapper View of CustomInput
+        marginBottom: 18,
     },
     loginButton: {
-        marginTop: 10,
-        backgroundColor: '#FF6347', // Tomato color, adjust to your theme
-        width: '100%',
+        marginTop: 15,
+        backgroundColor: '#007AFF', // Primary blue for login
+        paddingVertical: 16, // Taller button
+        borderRadius: 25, // Rounded button
     },
     linkButton: {
-        marginTop: 20,
+        marginTop: 22, // More space
+        alignItems: 'center', // Center link text
     },
     linkText: {
-        color: '#FF6347', // Tomato color
-        fontSize: 14,
+        color: '#007AFF', // Primary blue
+        fontSize: 15, // Slightly larger
+        fontWeight: '500',
     },
     errorText: {
-        color: 'red',
-        marginBottom: 15,
-        fontSize: 14,
+        color: '#D32F2F', // Material error red
+        marginBottom: 18,
+        fontSize: 15, // Slightly larger
         textAlign: 'center',
+        fontWeight: '500',
     },
     // Base styles for CustomButton and CustomInput (can be moved to their own files)
-    buttonBase: {
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        borderRadius: 8,
+    buttonBase: { // Base style for CustomButton's TouchableOpacity
+        // paddingVertical: 15, // Defined in loginButton or other specific button styles
+        // paddingHorizontal: 20, // Defined in loginButton
+        // borderRadius: 8, // Overridden by specific button styles
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 50,
+        minHeight: 52, // Slightly taller
+        width: '100%', // Make buttons full width by default
     },
-    buttonTextBase: {
+    buttonTextBase: { // Base style for CustomButton's Text
         color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 17, // Larger text
+        fontWeight: '600', // Bolder
     },
     buttonDisabled: {
-        backgroundColor: '#ccc',
+        backgroundColor: '#B0BEC5', // Blue Grey 200 for disabled
     },
-    inputContainerBase: {
+    inputContainerBase: { // Base style for CustomInput's wrapping View
         width: '100%',
-        backgroundColor: '#fff',
-        borderRadius: 8,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10, // More rounded
         borderWidth: 1,
-        borderColor: '#ddd',
-        paddingHorizontal: 15,
-        minHeight: 50,
+        borderColor: '#CFD8DC', // Blue Grey 100
+        paddingHorizontal: 18, // More padding
+        minHeight: 52, // Taller input
         justifyContent: 'center',
+        elevation: 1, // Subtle shadow for Android
+        shadowColor: '#000', // Subtle shadow for iOS
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
     },
-    inputBase: {
+    inputBase: { // Base style for CustomInput's TextInput
         fontSize: 16,
-        color: '#333',
+        color: '#263238', // Blue Grey 900
     }
 });
 

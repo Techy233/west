@@ -181,35 +181,37 @@ const ActiveRideScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    scrollView: { flex: 1, backgroundColor: '#f0f0f0' },
-    container: { padding: 15, paddingBottom: 30 },
+    scrollView: { flex: 1, backgroundColor: '#f4f6f8' }, // Lighter background
+    container: { padding: 20, paddingBottom: 40 }, // More padding
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center'},
-    title: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 5, textAlign: 'center' },
-    rideIdText: { fontSize: 12, color: 'gray', textAlign: 'center', marginBottom: 15},
+    title: { fontSize: 26, fontWeight: 'bold', color: '#2c3e50', marginBottom: 8, textAlign: 'center' }, // Darker blue/grey
+    rideIdText: { fontSize: 13, color: '#7f8c8d', textAlign: 'center', marginBottom: 20}, // Slightly larger, more margin
     map: {
         width: '100%',
-        height: 200, // Adjust as needed
-        borderRadius: 8,
-        marginBottom: 15,
+        height: 220, // Slightly larger
+        borderRadius: 10, // Consistent radius
+        marginBottom: 20, // More space
+        borderWidth: 1,
+        borderColor: '#ddd',
     },
-    errorTextGlobal: { color: 'red', marginBottom: 15, fontSize: 14, textAlign: 'center' },
+    errorTextGlobal: { color: '#e74c3c', marginBottom: 15, fontSize: 15, textAlign: 'center' }, // Alizarin red
 
-    detailsCard: { backgroundColor: '#fff', borderRadius: 8, padding: 15, marginBottom: 20, elevation: 2 },
-    actionsCard: { backgroundColor: '#fff', borderRadius: 8, padding: 15, marginBottom: 20, elevation: 2 },
-    cardTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: '#333' },
-    detailItem: { fontSize: 15, marginBottom: 6, color: '#444' },
-    statusText: { fontWeight: 'bold', color: '#007bff'},
-    finalStatusText: { fontSize: 16, textAlign: 'center', marginVertical: 15, color: '#555'},
+    detailsCard: { backgroundColor: '#ffffff', borderRadius: 10, padding: 20, marginBottom: 20, elevation: 3, shadowColor: '#000', shadowOffset: { width:0, height:2}, shadowOpacity: 0.1, shadowRadius:4 },
+    actionsCard: { backgroundColor: '#ffffff', borderRadius: 10, padding: 20, marginBottom: 20, elevation: 3, shadowColor: '#000', shadowOffset: { width:0, height:2}, shadowOpacity: 0.1, shadowRadius:4 },
+    cardTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: '#34495e' }, // Wet asphalt
+    detailItem: { fontSize: 16, marginBottom: 8, color: '#34495e', lineHeight: 22 },
+    statusText: { fontWeight: 'bold', color: '#3498db'}, // Peter river blue
+    finalStatusText: { fontSize: 17, textAlign: 'center', marginVertical: 20, color: '#2c3e50'},
 
-    actionButton: { marginBottom: 12, backgroundColor: '#007bff' }, // Blue
-    startButton: { backgroundColor: '#28a745'}, // Green
-    completeButton: { backgroundColor: '#17a2b8'}, // Teal
-    navButton: { backgroundColor: '#6c757d', marginTop:10},
+    actionButton: { marginBottom: 15, backgroundColor: '#3498db', borderRadius: 25, paddingVertical: 14 },
+    startButton: { backgroundColor: '#2ecc71'}, // Emerald green
+    completeButton: { backgroundColor: '#1abc9c'}, // Turquoise
+    navButton: { backgroundColor: '#95a5a6', marginTop:15, borderRadius: 25, paddingVertical: 14}, // Asbestos
 
-    // Base styles
+    // Base styles from CustomButton
     buttonBase: { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center', minHeight: 50 },
     buttonTextBase: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    buttonDisabled: { backgroundColor: '#ccc' },
+    buttonDisabled: { backgroundColor: '#bdc3c7' }, // Silver
 });
 
 export default ActiveRideScreen;

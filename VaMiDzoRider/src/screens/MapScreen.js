@@ -169,12 +169,12 @@ const MapScreen = ({ navigation }) => {
                     <TouchableOpacity
                         style={[styles.toggleButton, selectingFor === 'pickup' && styles.toggleButtonActive]}
                         onPress={() => setSelectingFor('pickup')}>
-                        <Text style={styles.toggleButtonText}>Set Pickup</Text>
+                        <Text style={[styles.toggleButtonText, selectingFor === 'pickup' && styles.activeToggleButtonText]}>Set Pickup</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.toggleButton, selectingFor === 'dropoff' && styles.toggleButtonActive]}
                         onPress={() => setSelectingFor('dropoff')}>
-                        <Text style={styles.toggleButtonText}>Set Dropoff</Text>
+                        <Text style={[styles.toggleButtonText, selectingFor === 'dropoff' && styles.activeToggleButtonText]}>Set Dropoff</Text>
                     </TouchableOpacity>
                 </View>
                 {pickupLocation && dropoffLocation && (
@@ -189,84 +189,102 @@ const MapScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1, // Changed from absoluteFillObject to allow search bar at top
+        flex: 1,
     },
     searchContainer: {
-        position: 'absolute', // Or handle layout differently
-        top: Platform.OS === 'ios' ? 40 : 10, // Adjust for status bar
-        width: '95%',
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 20, // Increased top margin for status bar + notch
+        width: '90%', // Slightly less width for better padding from screen edges
         alignSelf: 'center',
-        zIndex: 10, // Ensure it's above the map
-        backgroundColor: 'white', // If listview is part of container
-        borderRadius: 8,
+        zIndex: 10,
+        backgroundColor: 'transparent', // Make container transparent, style input itself
     },
-    searchInput: {
-        height: 48,
-        color: '#5d5d5d',
+    searchInput: { // This style is for the TextInput within GooglePlacesAutocomplete
+        height: 52, // Taller input
+        color: '#2c3e50', // Darker text
         fontSize: 16,
+        backgroundColor: '#ffffff', // White background for input
         borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
+        borderColor: '#bdc3c7', // Silver border
+        borderRadius: 25, // Rounded input
+        paddingHorizontal: 20, // More horizontal padding
+        elevation: 3, // Shadow for Android
+        shadowColor: '#000', // Shadow for iOS
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
     },
-    listView: { // Style for the results list
-        backgroundColor: 'white',
-        borderRadius: 8,
-        marginTop: 2, // Space between input and list
-        maxHeight: 200, // Limit list height
+    listView: {
+        backgroundColor: '#ffffff',
+        borderRadius: 10, // Rounded corners for list
+        marginTop: 8,
+        maxHeight: 250, // Slightly more height
+        borderWidth: 1,
+        borderColor: '#ecf0f1', // Clouds border
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
     },
     map: {
-        flex: 1, // Map takes remaining space
-        // ...StyleSheet.absoluteFillObject, // No longer absolute if search is part of normal flow
-        zIndex: 1, // Ensure map is below search
+        flex: 1,
+        zIndex: 1,
     },
     controlsOverlay: {
         position: 'absolute',
-        bottom: 20,
+        bottom: Platform.OS === 'ios' ? 30 : 20, // Adjust for home indicator on iOS
         left: '5%',
         right: '5%',
-        backgroundColor: 'transparent', // Or a semi-transparent background
         alignItems: 'center',
         zIndex: 5,
     },
     selectionToggle: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: 'rgba(255,255,255,0.9)',
-        borderRadius: 25,
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        marginBottom: 10,
-        width: '80%',
-        elevation: 3,
+        justifyContent: 'center', // Center buttons if not taking full width
+        backgroundColor: 'rgba(255,255,255,0.95)', // More opaque
+        borderRadius: 30, // More rounded
+        padding: 8, // Padding around buttons
+        marginBottom: 15, // More space to confirm button
+        elevation: 4, // More shadow
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
     },
     toggleButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 20,
+        paddingVertical: 12, // Taller toggle
+        paddingHorizontal: 25, // Wider toggle
+        borderRadius: 25, // Fully rounded ends
+        marginHorizontal: 5, // Space between toggles
     },
     toggleButtonActive: {
-        backgroundColor: '#007bff', // Active color
+        backgroundColor: '#007AFF', // Primary blue
     },
-    toggleButtonText: {
-        color: '#333', // Default text color
-        fontWeight: 'bold',
+    toggleButtonText: { // Style for the Text component inside TouchableOpacity
+        color: '#333',
+        fontWeight: '600', // Bolder
+        fontSize: 15,
     },
-    // Ensure active toggle button text is white or contrasts with active background
-    // toggleButtonActive Text style would be applied inside Text component:
-    // <Text style={[styles.toggleButtonText, selectingFor === 'pickup' && styles.activeToggleButtonText]}>Set Pickup</Text>
-    // activeToggleButtonText: { color: '#fff' },
+    activeToggleButtonText: { // Style for Text when button is active
+        color: '#fff',
+    },
     confirmButton: {
-        backgroundColor: '#28a745', // Green
-        paddingVertical: 15,
+        backgroundColor: '#2ecc71', // Emerald green
+        paddingVertical: 16, // Taller button
         paddingHorizontal: 30,
-        borderRadius: 25,
-        width: '80%',
+        borderRadius: 30, // Fully rounded
+        width: '90%', // Wider button
         alignItems: 'center',
-        elevation: 3,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
     },
     confirmButtonText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 17, // Larger text
         fontWeight: 'bold',
     }
 });

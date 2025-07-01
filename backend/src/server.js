@@ -30,7 +30,8 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 const rideRoutes = require('./routes/rideRoutes');
 app.use('/api/v1/rides', rideRoutes);
-// app.use('/api/v1/drivers', driverRoutes);
+const driverRoutes = require('./routes/driverRoutes');
+app.use('/api/v1/drivers', driverRoutes);
 
 
 // Error Handling Middleware (Simple example, can be more sophisticated)
@@ -42,9 +43,10 @@ app.use((err, req, res, next) => {
 // Create HTTP server for Express and Socket.IO
 const server = http.createServer(app);
 
-// In-memory store for driver_id to socket_id mapping
+// In-memory stores for user_id/driver_id to socket_id mapping
 // In production, use Redis or a similar store for scalability
 const driverSockets = new Map(); // Map<driver_id, socket_id>
+const riderSockets = new Map();  // Map<rider_id, socket_id>
 
 const io = new Server(server, {
   cors: {
@@ -69,6 +71,18 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Event for riders to register their socket
+  socket.on('register_rider_socket', (riderId) => {
+    if (riderId) {
+      riderSockets.set(riderId, socket.id);
+      console.log(`Rider ${riderId} registered socket ${socket.id}`);
+      socket.emit('rider_socket_registered', { riderId, socketId: socket.id, status: 'success' });
+    } else {
+      console.warn(`Attempt to register rider socket ${socket.id} without a riderId.`);
+      socket.emit('rider_socket_registration_failed', { message: 'riderId is required.' });
+    }
+  });
+
   // Example: Placeholder for location updates from drivers
   // socket.on('driver_location_update', (data) => {
   //   // data = { driverId, latitude, longitude }
@@ -87,18 +101,26 @@ io.on('connection', (socket) => {
         break;
       }
     }
+    // Remove rider from mapping on disconnect
+    for (let [riderId, socketId] of riderSockets.entries()) {
+        if (socketId === socket.id) {
+            riderSockets.delete(riderId);
+            console.log(`Rider ${riderId} (socket ${socket.id}) unregistered due to disconnect.`);
+            break;
+        }
+    }
   });
 });
 
 
-// Make io instance available to other modules (e.g., controllers)
-// This is a simple way; dependency injection or a service locator pattern might be better for larger apps.
+// Make io instance and socket maps available to other modules
 app.set('socketio', io);
 app.set('driverSockets', driverSockets);
+app.set('riderSockets', riderSockets);
 
 
 server.listen(port, () => {
   console.log(`Server running on http://localhost:${port}. WebSocket server initialized.`);
 });
 
-module.exports = { app, server, io, driverSockets }; // Export for potential testing & direct use
+module.exports = { app, server, io, driverSockets, riderSockets }; // Export for testing & direct use

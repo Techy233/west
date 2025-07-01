@@ -85,5 +85,9 @@ export const updateDriverVehicleInfo = (vehicleData) => {
     return apiClient.put('/users/me/vehicle', vehicleData); // Endpoint specific to driver vehicle
 };
 
+export const setDriverAvailability = (isAvailable) => {
+    return apiClient.post('/drivers/me/availability', { is_available: isAvailable });
+};
+
 
 export default apiClient;

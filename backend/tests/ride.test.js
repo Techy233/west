@@ -192,7 +192,144 @@ describe('Ride API Endpoints', () => {
         });
     });
 
-    // TODO: Add tests for cancellation endpoints (rider and driver)
-    // describe('POST /api/v1/rides/:rideId/cancel-rider', () => { ... });
-    // describe('POST /api/v1/rides/:rideId/cancel-driver', () => { ... });
+    // --- Ride Cancellation Tests ---
+    describe('POST /api/v1/rides/:rideId/cancel-rider', () => {
+        const rideToCancel = 'ride-to-cancel-by-rider-uuid';
+
+        it('should allow a rider to cancel their own ride in a cancellable state (e.g. requested)', async () => {
+            db.query.mockReset();
+            db.query
+                .mockResolvedValueOnce({ // Mock service.getRide (or controller's direct DB call)
+                    rows: [{ ride_id: rideToCancel, rider_id: mockRiderId, driver_id: null, status: 'requested' }]
+                })
+                .mockResolvedValueOnce({ // Mock service.cancelRideAsRider's DB update
+                    rows: [{ ride_id: rideToCancel, status: 'cancelled_rider', rider_id: mockRiderId }]
+                });
+
+            const res = await request(app)
+                .post(`/api/v1/rides/${rideToCancel}/cancel-rider`)
+                .set('Authorization', `Bearer ${mockRiderToken}`)
+                .send({ reason: "Changed my mind" });
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body.ride).toHaveProperty('status', 'cancelled_rider');
+            expect(res.body.message).toContain('Ride cancelled successfully by rider');
+        });
+
+        it('should return 403 if another user (not the rider of the ride) tries to cancel', async () => {
+            const anotherRiderToken = generateMockToken('another-rider-uuid', 'rider');
+            db.query.mockReset();
+            db.query.mockResolvedValueOnce({ // service.getRide would not find a ride for this user + rideId combination
+                 // OR if it found the ride, the service/controller auth check would fail.
+                 // Simulating the service throwing a 403/404 like error.
+                 // The actual DB mock depends on how deep the test goes. Here, we assume service handles auth.
+                rows: [{ ride_id: rideToCancel, rider_id: 'original-rider-id', status: 'requested' }]
+            });
+            // No update mock needed as it shouldn't reach that point if auth fails
+
+            const res = await request(app)
+                .post(`/api/v1/rides/${rideToCancel}/cancel-rider`)
+                .set('Authorization', `Bearer ${anotherRiderToken}`)
+                .send({ reason: "Test" });
+
+            // Expecting 403/404 because the service layer should prevent this.
+            // If the service's initial fetch is `WHERE ride_id = $1 AND rider_id = $2`, it would be 404.
+            expect(res.statusCode).toBeOneOf([403, 404]);
+        });
+
+
+        it('should return 409 if ride is not in a cancellable state by rider (e.g., ongoing)', async () => {
+            db.query.mockReset();
+            db.query.mockResolvedValueOnce({
+                rows: [{ ride_id: rideToCancel, rider_id: mockRiderId, status: 'ongoing' }]
+            });
+            const res = await request(app)
+                .post(`/api/v1/rides/${rideToCancel}/cancel-rider`)
+                .set('Authorization', `Bearer ${mockRiderToken}`)
+                .send({ reason: "Too late" });
+
+            expect(res.statusCode).toEqual(409);
+            expect(res.body.message).toContain("Ride cannot be cancelled. Current status: 'ongoing'");
+        });
+    });
+
+    describe('POST /api/v1/rides/:rideId/cancel-driver', () => {
+        const rideToCancelByDriver = 'ride-to-cancel-by-driver-uuid';
+
+        it('should allow an assigned driver to cancel a ride in an accepted state', async () => {
+            db.query.mockReset();
+            db.query
+                .mockResolvedValueOnce({
+                    rows: [{ ride_id: rideToCancelByDriver, driver_id: mockDriverId, rider_id: mockRiderId, status: 'accepted' }]
+                })
+                .mockResolvedValueOnce({
+                    rows: [{ ride_id: rideToCancelByDriver, status: 'cancelled_driver', driver_id: mockDriverId }]
+                });
+
+            const res = await request(app)
+                .post(`/api/v1/rides/${rideToCancelByDriver}/cancel-driver`)
+                .set('Authorization', `Bearer ${mockDriverToken}`);
+                // .send({ reason: "Emergency" }); // Reason is optional for driver
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body.ride).toHaveProperty('status', 'cancelled_driver');
+        });
+
+        it('should return 409 if driver tries to cancel a ride not in cancellable state (e.g. requested but not accepted)', async () => {
+            db.query.mockReset();
+            db.query.mockResolvedValueOnce({
+                rows: [{ ride_id: rideToCancelByDriver, driver_id: mockDriverId, status: 'requested' }]
+            });
+             const res = await request(app)
+                .post(`/api/v1/rides/${rideToCancelByDriver}/cancel-driver`)
+                .set('Authorization', `Bearer ${mockDriverToken}`);
+
+            expect(res.statusCode).toEqual(409);
+            expect(res.body.message).toContain("Ride cannot be cancelled by driver. Current status: 'requested'");
+        });
+    });
+
+    // --- Ride Status Update Edge Cases ---
+    describe('PUT /api/v1/rides/:rideId/status (Edge Cases)', () => {
+        const rideForStatusUpdate = 'ride-status-edge-uuid';
+
+        it('should not allow completing a ride that is not ongoing', async () => {
+            db.query.mockReset();
+            db.query.mockResolvedValueOnce({
+                rows: [{ ride_id: rideForStatusUpdate, driver_id: mockDriverId, status: 'accepted' }]
+            });
+            const res = await request(app)
+                .put(`/api/v1/rides/${rideForStatusUpdate}/status`)
+                .set('Authorization', `Bearer ${mockDriverToken}`)
+                .send({ action: 'complete_trip' });
+
+            expect(res.statusCode).toEqual(409);
+            expect(res.body.message).toContain("Cannot complete trip. Ride status is 'accepted', expected 'ongoing'");
+        });
+
+        it('should not allow starting a ride that is already completed', async () => {
+            db.query.mockReset();
+            db.query.mockResolvedValueOnce({
+                rows: [{ ride_id: rideForStatusUpdate, driver_id: mockDriverId, status: 'completed' }]
+            });
+            const res = await request(app)
+                .put(`/api/v1/rides/${rideForStatusUpdate}/status`)
+                .set('Authorization', `Bearer ${mockDriverToken}`)
+                .send({ action: 'start_trip' });
+
+            expect(res.statusCode).toEqual(409); // Based on service logic for 'start_trip'
+        });
+
+        it('should return 400 for an invalid action in status update', async () => {
+            // No DB mock needed if Joi validation catches this first in the route.
+            const res = await request(app)
+                .put(`/api/v1/rides/${rideForStatusUpdate}/status`)
+                .set('Authorization', `Bearer ${mockDriverToken}`)
+                .send({ action: 'invalid_action_123' });
+
+            expect(res.statusCode).toEqual(400);
+            expect(res.body).toHaveProperty('message', 'Validation failed');
+            expect(res.body.errors[0].message).toContain('Invalid action. Allowed actions are: driver_arrived, start_trip, complete_trip.');
+        });
+    });
 });

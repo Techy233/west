@@ -73,11 +73,14 @@ import DriverDashboardScreen from '../screens/DriverDashboardScreen'; // Import 
 import SplashScreen from '../screens/SplashScreen'; // Assuming you'll create/use one
 import { useAuthDriver } from '../contexts/AuthContext'; // For checking auth state
 
+import DriverLoginScreen from '../screens/DriverLoginScreen'; // Import actual login screen
+import DriverRegistrationScreen from '../screens/DriverRegistrationScreen'; // Import actual registration screen
+
 // Define Auth stack (Placeholders for now, can be fleshed out)
 const DriverAuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="DriverLogin" component={PlaceholderScreen} />
-    <Stack.Screen name="DriverRegister" component={PlaceholderScreen} />
+  <Stack.Navigator screenOptions={{ headerShown: true }}> {/* Show header for titles */}
+    <Stack.Screen name="DriverLogin" component={DriverLoginScreen} options={{title: "VaMiDzo Driver Login"}}/>
+    <Stack.Screen name="DriverRegister" component={DriverRegistrationScreen} options={{title: "Driver Sign Up"}}/>
     {/* Add DocumentUpload and VehicleManagement here if part of initial registration flow */}
   </Stack.Navigator>
 );

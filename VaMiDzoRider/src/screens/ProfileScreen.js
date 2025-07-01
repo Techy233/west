@@ -1,11 +1,19 @@
 // VaMiDzoRider/src/screens/ProfileScreen.js
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, TextInput, StyleSheet, Alert, ScrollView, ActivityIndicator, TouchableOpacity
+    View, Text, TextInput, StyleSheet, Alert, ScrollView, ActivityIndicator, TouchableOpacity, Image, Platform
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { getMyProfile, updateUserProfile, updateUserProfilePicture } from '../services/api';
-// For image picker: import ImagePicker from 'react-native-image-picker'; // or react-native-document-picker
+import { getMyProfile, updateUserProfile, updateUserProfilePicture, API_BASE_URL } from '../services/api'; // Import API_BASE_URL
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+
+// Define a base URL for images if they are served from the same backend but without /api/v1
+// This needs to be adjusted based on your actual backend file serving setup.
+// If profile_picture_url from backend is absolute, this is not needed.
+// If it's relative like '/uploads/profile_pictures/image.jpg', then construct full URL.
+const API_BASE_URL_FOR_IMAGES = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+
 
 // Reusable components (can be moved)
 const CustomButton = ({ title, onPress, style, textStyle, disabled }) => (
@@ -103,47 +111,82 @@ const ProfileScreen = () => {
         }
     };
 
-    const handleProfilePictureUpload = () => {
-        // --- Placeholder for react-native-image-picker or react-native-document-picker logic ---
-        // 1. Launch image picker
-        // 2. Get the selected image URI and type
-        // 3. Create FormData object
-        //    const formData = new FormData();
-        //    formData.append('profileImage', {
-        //      uri: imageUri,
-        //      type: imageType, // e.g., 'image/jpeg'
-        //      name: imageFileName, // e.g., 'profile.jpg'
-        //    });
-        // 4. Call updateUserProfilePicture(formData)
-        // 5. Handle response (update profile_picture_url in state/context)
+    const requestMediaPermission = async (type) => {
+        let permission;
+        if (Platform.OS === 'ios') {
+            permission = type === 'camera' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.IOS.PHOTO_LIBRARY;
+        } else { // Android
+            permission = type === 'camera' ? PERMISSIONS.ANDROID.CAMERA : PERMISSIONS.ANDROID.READ_MEDIA_IMAGES; // Or READ_EXTERNAL_STORAGE for older Android
+        }
+        const status = await request(permission);
+        if (status !== RESULTS.GRANTED) {
+            Alert.alert("Permission Denied", `Cannot access ${type === 'camera' ? 'camera' : 'gallery'} without permission.`);
+            return false;
+        }
+        return true;
+    };
 
+    const handleChooseImage = (type) => { // type: 'camera' or 'library'
         Alert.alert(
-            "Upload Profile Picture",
-            "Image picker functionality to be implemented. This will call the backend endpoint for picture upload.",
-            async () => {
-                // Simulate an API call for placeholder
+            "Select Profile Picture",
+            "Choose an option:",
+            [
+                { text: "Take Photo...", onPress: () => launchPicker('camera') },
+                { text: "Choose from Library...", onPress: () => launchPicker('library') },
+                { text: "Cancel", style: "cancel" }
+            ]
+        );
+    };
+
+    const launchPicker = async (pickerType) => {
+        const hasPermission = await requestMediaPermission(pickerType);
+        if (!hasPermission) return;
+
+        const options = {
+            mediaType: 'photo',
+            quality: 0.7, // Compress image a bit
+            maxWidth: 800,
+            maxHeight: 800,
+        };
+
+        const imagePickerLauncher = pickerType === 'camera' ? launchCamera : launchImageLibrary;
+
+        imagePickerLauncher(options, async (response) => {
+            if (response.didCancel) {
+                console.log('User cancelled image picker');
+            } else if (response.errorCode) {
+                console.log('ImagePicker Error: ', response.errorMessage);
+                Alert.alert("Image Error", response.errorMessage || "Could not select image.");
+            } else if (response.assets && response.assets.length > 0) {
+                const asset = response.assets[0];
+                const formData = new FormData();
+                formData.append('profileImage', {
+                    uri: Platform.OS === 'android' ? asset.uri : asset.uri.replace('file://', ''),
+                    type: asset.type,
+                    name: asset.fileName || `profile-${Date.now()}.jpg`,
+                });
+
                 setIsUpdating(true);
+                setError('');
                 try {
-                    // This is a MOCK of what would happen.
-                    // const mockFormData = new FormData();
-                    // mockFormData.append('info', 'test image upload'); // Cannot send actual file here easily.
-                    // const response = await updateUserProfilePicture(mockFormData); // This would fail without real file
-
-                    // Simulate success after a delay
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    const simulatedNewUrl = `https://example.com/uploads/profile_pictures/new_pic_${Date.now()}.jpg`;
-                    setProfileData(prev => ({...prev, profile_picture_url: simulatedNewUrl}));
-                    Alert.alert("Success (Simulated)", "Profile picture 'uploaded' and URL updated.");
-
+                    const apiResponse = await updateUserProfilePicture(formData);
+                    if (apiResponse.data && apiResponse.data.profile_picture_url) {
+                        setProfileData(prev => ({ ...prev, profile_picture_url: apiResponse.data.profile_picture_url }));
+                        // Optionally update AuthContext userData if it stores this URL
+                        Alert.alert("Success", "Profile picture updated!");
+                    } else {
+                        setError(apiResponse.data?.message || "Failed to update profile picture URL.");
+                    }
                 } catch (err) {
-                    console.error("Simulated Pic Upload Error:", err.response?.data || err.message);
-                    Alert.alert("Error (Simulated)", "Could not 'upload' picture.");
+                    console.error("Profile Pic Upload Error:", err.response?.data || err.message);
+                    setError(err.response?.data?.message || "Error uploading profile picture.");
                 } finally {
                     setIsUpdating(false);
                 }
             }
-        );
+        });
     };
+
 
     if (isLoading) {
         return <View style={styles.centered}><ActivityIndicator size="large" color="#FF6347" /><Text>Loading Profile...</Text></View>;
@@ -159,15 +202,22 @@ const ProfileScreen = () => {
 
             {error && <Text style={styles.errorTextGlobal}>{error}</Text>}
 
-            {profileData?.profile_picture_url && (
-                <View style={styles.imageContainer}>
-                    {/* In a real app, use <Image source={{uri: profileData.profile_picture_url}} /> */}
-                    <Text style={styles.imagePlaceholderText}>[Profile Image Placeholder: {profileData.profile_picture_url}]</Text>
-                </View>
-            )}
-            <CustomButton
+            <View style={styles.imageContainer}>
+                {profileData?.profile_picture_url ? (
+                    <Image
+                        source={{ uri: `${API_BASE_URL_FOR_IMAGES}${profileData.profile_picture_url}` }} // Assuming profile_picture_url is relative
+                        style={styles.profileImage}
+                        onError={(e) => console.log("Image load error:", e.nativeEvent.error)}
+                    />
+                ) : (
+                    <View style={styles.imagePlaceholder}>
+                        <Text style={styles.imagePlaceholderText}>No Image</Text>
+                    </View>
+                )}
+            </View>
+             <CustomButton
                 title="Change Profile Picture"
-                onPress={handleProfilePictureUpload}
+                onPress={handleChooseImage} // Updated to handleChooseImage
                 style={styles.uploadButton}
                 disabled={isUpdating}
             />
@@ -270,13 +320,27 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
     },
-    imagePlaceholderText: {
-        fontSize: 12,
-        color: 'gray',
+    profileImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 60, // Makes it circular
+        borderColor: '#ddd',
+        borderWidth: 2,
+        backgroundColor: '#eee', // Placeholder while loading or if no image
+    },
+    imagePlaceholder: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: '#e0e0e0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderColor: '#ccc',
         borderWidth: 1,
-        borderColor: 'lightgray',
-        padding: 20,
-        textAlign: 'center',
+    },
+    imagePlaceholderText: {
+        fontSize: 14,
+        color: '#888',
     },
     // Base styles
     buttonBase: {

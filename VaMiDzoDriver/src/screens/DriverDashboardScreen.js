@@ -23,7 +23,7 @@ const getRegionForCoordinates = (points) => {
 };
 import { useAuthDriver } from '../contexts/AuthContext';
 import { initSocket, getSocket, disconnectSocket } from '../services/socketService';
-import { acceptRide, rejectRide } from '../services/api';
+import { acceptRide, rejectRide, setDriverAvailability } from '../services/api'; // Added setDriverAvailability
 
 // Default location (Accra, Ghana) - Used if permission denied or error
 const ACCRA_DEFAULT_LOCATION = {
@@ -182,13 +182,21 @@ const DriverDashboardScreen = ({ navigation }) => {
         }
     };
 
-    const toggleAvailability = () => {
-        setAvailability(prev => !prev);
-        // TODO: Send this availability status to backend
-        // e.g., api.updateDriverAvailability(!availability)
-        setStatusMessage(!availability ? "Listening for ride requests..." : "You are now Offline. Go Online to receive requests.");
-        if (availability && currentRideRequest) { // If going offline with a pending request
-            setCurrentRideRequest(null); // Clear it from UI
+    const toggleAvailability = async () => {
+        const newAvailability = !availability;
+        setStatusMessage(newAvailability ? "Going Online..." : "Going Offline...");
+        try {
+            await setDriverAvailability(newAvailability);
+            setAvailability(newAvailability);
+            setStatusMessage(newAvailability ? "You are Online. Listening for ride requests..." : "You are Offline. Go Online to receive requests.");
+            if (!newAvailability && currentRideRequest) { // If going offline with a pending request
+                setCurrentRideRequest(null); // Clear it from UI, driver won't act on it
+            }
+        } catch (err) {
+            Alert.alert("Error", "Could not update availability status. Please try again.");
+            console.error("Set availability error:", err.response?.data || err.message);
+            // Revert status message if API call failed
+            setStatusMessage(availability ? "You are Online. Listening for ride requests..." : "You are Offline. Go Online to receive requests.");
         }
     };
 
@@ -321,60 +329,72 @@ const DriverDashboardScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    scrollView: { flex: 1, backgroundColor: '#f0f0f0' },
-    container: { flex:1, padding: 15, alignItems: 'center' }, // Ensure container can flex for map
+    scrollView: { flex: 1, backgroundColor: '#f4f6f8' }, // Lighter background
+    container: { flexGrow: 1, padding: 15, alignItems: 'stretch' }, // alignItems: 'stretch' for full-width buttons, flexGrow for ScrollView
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center'},
-    header: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10},
-    title: { fontSize: 24, fontWeight: 'bold', color: '#333' },
-    driverInfo: { fontSize: 16, color: '#555', marginBottom: 5, alignSelf: 'flex-start' },
+    header: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+        paddingHorizontal: 5,
+    },
+    title: { fontSize: 26, fontWeight: 'bold', color: '#2c3e50' }, // Darker blue/grey
+    driverInfo: { fontSize: 17, color: '#34495e', marginBottom: 8, alignSelf: 'flex-start' }, // Slightly darker
     mapContainer: {
         width: '100%',
         height: 200, // Adjust as needed, or use flex
         backgroundColor: '#e0e0e0', // Placeholder background
         marginBottom: 10,
-        borderRadius: 8,
-        overflow: 'hidden', // Ensures map corners are rounded if map itself doesn't support it
+        borderRadius: 10, // Consistent border radius
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#ddd',
     },
     map: {
         ...StyleSheet.absoluteFillObject,
     },
-    statusMessage: { fontSize: 14, color: 'gray', marginVertical: 10, fontStyle: 'italic', alignSelf: 'center' }, // Adjusted margin
-    goOnlineButton: { backgroundColor: '#28a745', paddingVertical: 8, paddingHorizontal:12, minWidth: 100},
-    goOfflineButton: { backgroundColor: '#ffc107', paddingVertical: 8, paddingHorizontal:12, minWidth: 100},
+    statusMessage: { fontSize: 15, color: '#7f8c8d', marginVertical: 12, fontStyle: 'italic', textAlign: 'center' },
+    goOnlineButton: { backgroundColor: '#2ecc71', paddingVertical: 10, paddingHorizontal:15, minWidth: 110, borderRadius: 25}, // Emerald green, more rounded
+    goOfflineButton: { backgroundColor: '#f39c12', paddingVertical: 10, paddingHorizontal:15, minWidth: 110, borderRadius: 25}, // Orange, more rounded
     miniMap: {
         width: '100%',
-        height: 150, // Adjust as needed
-        borderRadius: 8,
-        marginBottom: 10,
+        height: 150,
+        borderRadius: 10, // Consistent border radius
+        marginBottom: 15, // More space
+        borderWidth: 1,
+        borderColor: '#eee',
     },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center'},
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding:20},
     rideRequestCard: {
-        width: '90%',
+        width: '100%',
+        maxWidth: 400,
         backgroundColor: '#fff',
-        borderRadius: 10,
-        padding: 20,
-        elevation: 5,
+        borderRadius: 12, // Slightly more rounded
+        padding: 25,
+        elevation: 8,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
     },
-    cardTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-    detailItem: { fontSize: 15, marginBottom: 8 },
-    buttonRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 },
-    actionButton: { flex: 1, marginHorizontal: 10 },
-    acceptButton: { backgroundColor: '#28a745' }, // Green
-    rejectButton: { backgroundColor: '#dc3545' }, // Red
+    cardTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#333' },
+    detailItem: { fontSize: 16, marginBottom: 10, color: '#444', lineHeight: 22 },
+    buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 25 },
+    actionButton: { flex: 1, marginHorizontal: 8, paddingVertical: 14, borderRadius: 25 },
+    acceptButton: { backgroundColor: '#2ecc71' },
+    rejectButton: { backgroundColor: '#e74c3c' },
 
-    noRequestView: { marginTop: 30, alignItems: 'center', opacity: 0.7},
-    waitingText: {fontSize: 16, color: '#007bff', marginTop: 10},
+    noRequestView: { marginTop: 40, alignItems: 'center', opacity: 0.8},
+    waitingText: {fontSize: 17, color: '#3498db', marginTop: 12},
 
-    navButton: { backgroundColor: '#6c757d', width: '90%', marginTop: 10}, // Grey for nav buttons
-    logoutButton: { backgroundColor: '#FF6347', width: '90%', marginTop: 25 },
-    // Base styles
+    navButton: { backgroundColor: '#95a5a6', width: '100%', marginTop: 12, borderRadius: 25, paddingVertical: 14},
+    logoutButton: { backgroundColor: '#e74c3c', width: '100%', marginTop: 30, borderRadius: 25, paddingVertical: 14 },
+    // Base styles from CustomButton
     buttonBase: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
     buttonTextBase: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    buttonDisabled: { backgroundColor: '#ccc' },
+    buttonDisabled: { backgroundColor: '#bdc3c7' }, // Silver for disabled
 });
 
 export default DriverDashboardScreen;

@@ -1,7 +1,8 @@
 // VaMiDzoRider/src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser as apiLoginUser, registerRider as apiRegisterRider } from '../services/api'; // Assuming api service handles actual calls
+import { loginUser as apiLoginUser, registerRider as apiRegisterRider } from '../services/api';
+import { initSocket as initRiderSocket, disconnectSocket as disconnectRiderSocket } from '../services/socketService'; // Import socket functions
 
 const AuthContext = createContext(null);
 
@@ -19,12 +20,13 @@ export const AuthProvider = ({ children }) => {
                 token = await AsyncStorage.getItem('userToken');
                 storedUserData = await AsyncStorage.getItem('userData');
                 if (token && storedUserData) {
+                    const parsedUserData = JSON.parse(storedUserData);
                     setUserToken(token);
-                    setUserData(JSON.parse(storedUserData));
+                    setUserData(parsedUserData);
+                    initRiderSocket(parsedUserData.userId); // Initialize socket with rider ID
                 }
             } catch (e) {
                 console.error("Restoring token failed", e);
-                // Can also remove token if it's corrupted or invalid
                 await AsyncStorage.removeItem('userToken');
                 await AsyncStorage.removeItem('userData');
             }
@@ -41,16 +43,18 @@ export const AuthProvider = ({ children }) => {
                 const response = await apiLoginUser({ phone_number: phoneNumber, password });
                 if (response.data && response.data.token) {
                     const token = response.data.token;
-                    const user = response.data.user;
+                    const user = response.data.user; // Expecting { userId, role, ... }
                     await AsyncStorage.setItem('userToken', token);
                     await AsyncStorage.setItem('userData', JSON.stringify(user));
                     setUserToken(token);
                     setUserData(user);
+                    if (user.userId) {
+                        initRiderSocket(user.userId); // Initialize socket on login
+                    }
                     setIsLoading(false);
                     return { success: true, user };
                 } else {
                     setIsLoading(false);
-                    // Use message from API response if available, else generic
                     return { success: false, error: response.data?.message || "Login failed from context" };
                 }
             } catch (error) {
@@ -59,14 +63,12 @@ export const AuthProvider = ({ children }) => {
                 return { success: false, error: error.response?.data?.message || "An error occurred during login." };
             }
         },
-        signUpRider: async (riderDetails) => { // Example for rider signup
+        signUpRider: async (riderDetails) => {
             setIsLoading(true);
             try {
                 const response = await apiRegisterRider(riderDetails);
-                 if (response.data && response.data.token) { // Assuming registration also returns a token (or just success)
-                    // Typically, after registration, user should login.
-                    // Or, if backend auto-logs in, handle token and user data.
-                    // For this example, let's assume it returns success and user should login.
+                 if (response.data && (response.data.token || response.status === 201)) {
+                    // Assuming successful registration doesn't auto-login but returns success message
                     setIsLoading(false);
                     return { success: true, message: response.data.message || "Registration successful. Please login."};
                 } else {
@@ -88,6 +90,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 await AsyncStorage.removeItem('userToken');
                 await AsyncStorage.removeItem('userData');
+                disconnectRiderSocket(); // Disconnect socket on sign out
             } catch (e) {
                 console.error("Signing out failed", e);
             }
@@ -96,7 +99,7 @@ export const AuthProvider = ({ children }) => {
             setIsLoading(false);
         },
         userToken,
-        userData,
+        userData, // This should contain { userId, role, ... }
         isAuthenticated: !!userToken, // True if userToken is not null
         isLoading // To show loading indicator while checking token or during login/signup
     };

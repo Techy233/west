@@ -186,92 +186,63 @@ const RegistrationScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    keyboardAvoidingContainer: {
-        flex: 1,
-        backgroundColor: '#f7f7f7',
+    kbView: { flex: 1, backgroundColor: '#E9F5FF' }, // Consistent light sky blue
+    scrollContainer: { flexGrow: 1, justifyContent: 'center', paddingVertical: 30 }, // More vertical padding
+    container: { paddingHorizontal: 30, alignItems: 'stretch' }, // Stretch for full-width elements
+    title: { fontSize: 30, fontWeight: 'bold', color: '#007AFF', marginBottom: 12, textAlign: 'center' }, // Primary blue
+    subtitle: { fontSize: 16, color: '#555', marginBottom: 25, textAlign: 'center', lineHeight: 22 },
+    sectionTitle: {
+        fontSize: 18, fontWeight: '600', color: '#34495e', // Wet Asphalt
+        marginTop: 20, marginBottom: 12,
+        borderBottomWidth:1, borderBottomColor:'#CFD8DC', // Blue Grey 100
+        paddingBottom:8
     },
-    scrollContainer: {
-        flexGrow: 1,
+    inputContainerBase: { // Style for the wrapper View of CustomInput
+        marginBottom: 8, // Tighter packing for fields within a section
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#CFD8DC',
+        paddingHorizontal: 18,
+        minHeight: 52,
         justifyContent: 'center',
-        paddingVertical: 20, // Add padding for scroll view content
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
     },
-    container: {
-        paddingHorizontal: 25,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    subtitle: {
+    inputBase: { // Style for the TextInput itself
         fontSize: 16,
-        color: '#666',
-        marginBottom: 20, // Reduced margin
-        textAlign: 'center',
-    },
-    inputField: {
-        marginBottom: 5, // Reduced margin for tighter packing with error messages
-        width: '100%',
+        color: '#263238', // Blue Grey 900
     },
     registerButton: {
-        marginTop: 15, // Adjusted margin
-        backgroundColor: '#28a745', // Green color for registration
+        marginTop: 30,
+        backgroundColor: '#28a745', // Keep green for register action
+        paddingVertical: 16,
+        borderRadius: 25,
         width: '100%',
     },
-    linkButton: {
-        marginTop: 20,
-    },
-    linkText: {
-        color: '#FF6347', // Tomato color, consistent with LoginScreen
-        fontSize: 14,
-    },
-    errorTextGlobal: {
-        color: 'red',
-        marginBottom: 10, // Margin for global error
-        fontSize: 14,
-        textAlign: 'center',
-    },
+    linkButton: { marginTop: 25, alignItems: 'center' },
+    linkText: { color: '#007AFF', fontSize: 15, fontWeight: '500' },
+    errorTextGlobal: { color: '#D32F2F', marginBottom: 15, fontSize: 15, textAlign: 'center', fontWeight: '500'},
     errorText: { // Field specific error
-        color: 'red',
+        color: '#D32F2F',
         alignSelf: 'flex-start',
-        marginLeft: 5, // Indent slightly
-        marginBottom: 10, // Space before next input
-        fontSize: 12,
+        marginLeft: 8, // Slight indent
+        marginBottom: 12, // Space before next input section or button
+        fontSize: 13, // Slightly larger
+        fontWeight: '500',
     },
-    // Base styles for CustomButton and CustomInput (can be moved to their own files)
+    // Base styles for CustomButton (TouchableOpacity part)
     buttonBase: {
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 50,
+        minHeight: 52,
+        width: '100%', // Make buttons full width by default in this screen
     },
-    buttonTextBase: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    buttonDisabled: {
-        backgroundColor: '#ccc',
-    },
-    inputContainerBase: {
-        width: '100%',
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        paddingHorizontal: 15,
-        minHeight: 50,
-        justifyContent: 'center',
-    },
-    inputBase: {
-        fontSize: 16,
-        color: '#333',
-    }
+    buttonTextBase: { color: '#fff', fontSize: 17, fontWeight: '600' },
+    buttonDisabled: { backgroundColor: '#B0BEC5' },
 });
 
 export default RegistrationScreen;

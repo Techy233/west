@@ -189,23 +189,50 @@ const RequestRideScreen = ({ route, navigation }) => { // Added route prop
 };
 
 const styles = StyleSheet.create({
-    scrollView: { flex: 1, backgroundColor: '#f7f7f7' },
-    container: { padding: 20 },
-    title: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 20, textAlign: 'center' },
-    label: { fontSize: 14, color: '#555', marginBottom: 5, marginLeft: 5, fontWeight: '500' },
-    inputField: { marginBottom: 15 },
-    requestButton: { marginTop: 20, backgroundColor: '#FF6347' }, // Tomato color
-    errorTextGlobal: { color: 'red', marginBottom: 15, fontSize: 14, textAlign: 'center' },
-    fareEstimate: { fontSize: 18, fontWeight: 'bold', color: 'green', textAlign: 'center', marginVertical: 15 },
-    infoText: { fontSize: 12, fontStyle: 'italic', color: 'gray', textAlign: 'center', marginBottom: 10 },
-    // Base styles
-    buttonBase: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
-    buttonTextBase: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    buttonDisabled: { backgroundColor: '#ccc' },
-    inputContainerBase: { width: '100%', backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#ddd', paddingHorizontal: 15, minHeight: 48, justifyContent: 'center' },
-    inputBase: { fontSize: 16, color: '#333' },
-    inputContainerMultiline: { minHeight: 80, alignItems: 'flex-start', paddingTop: 10 },
-    inputMultiline: { textAlignVertical: 'top'},
+    scrollView: { flex: 1, backgroundColor: '#E9F5FF' }, // Consistent light sky blue
+    container: { paddingHorizontal: 25, paddingVertical: 20 }, // Adjusted padding
+    title: { fontSize: 28, fontWeight: 'bold', color: '#007AFF', marginBottom: 25, textAlign: 'center' }, // Primary blue
+    label: { fontSize: 15, color: '#34495e', marginBottom: 8, marginLeft: 5, fontWeight: '600' }, // Wet asphalt, bolder
+    inputField: { marginBottom: 18 }, // Wrapper view for CustomInput
+    requestButton: {
+        marginTop: 25,
+        backgroundColor: '#007AFF', // Primary blue
+        paddingVertical: 16,
+        borderRadius: 25, // Rounded
+    },
+    errorTextGlobal: { color: '#D32F2F', marginBottom: 18, fontSize: 15, textAlign: 'center', fontWeight: '500' },
+    fareEstimate: { fontSize: 19, fontWeight: 'bold', color: '#27ae60', textAlign: 'center', marginVertical: 20 }, // Emerald green
+    infoText: { fontSize: 13, fontStyle: 'italic', color: '#7f8c8d', textAlign: 'center', marginBottom: 15, lineHeight: 18 }, // Asbestos
+    // Base styles from LoginScreen for consistency
+    buttonBase: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 52,
+        width: '100%',
+    },
+    buttonTextBase: { color: '#fff', fontSize: 17, fontWeight: '600' },
+    buttonDisabled: { backgroundColor: '#B0BEC5' }, // Blue Grey 200
+    inputContainerBase: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#CFD8DC', // Blue Grey 100
+        paddingHorizontal: 18,
+        minHeight: 52,
+        justifyContent: 'center',
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+    },
+    inputBase: {
+        fontSize: 16,
+        color: '#263238', // Blue Grey 900
+    },
+    inputContainerMultiline: { minHeight: 80, alignItems: 'flex-start', paddingTop: 12 }, // More padding for multiline
+    inputMultiline: { textAlignVertical: 'top', height: 60 }, // Ensure multiline text input has some height
 });
 
 export default RequestRideScreen;

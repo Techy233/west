@@ -2,8 +2,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Assuming you'll create a similar api.js for the driver app
-// For now, direct import for login/register might be okay, or pass functions
-import { loginUser as apiLoginUser, registerDriver as apiRegisterDriver } from '../services/api'; // Placeholder, create this service
+import * as api from '../services/api'; // Import all from api service
 
 const AuthContext = createContext(null);
 
@@ -37,7 +36,7 @@ export const AuthProvider = ({ children }) => {
         signInDriver: async (phoneNumber, password) => {
             setIsLoading(true);
             try {
-                const response = await apiLoginUser({ phone_number: phoneNumber, password }); // Ensure this API call is for drivers
+                const response = await api.loginUser({ phone_number: phoneNumber, password }); // Using api.loginUser
                 if (response.data && response.data.token && response.data.user?.role === 'driver') {
                     const token = response.data.token;
                     const user = response.data.user;
@@ -45,11 +44,13 @@ export const AuthProvider = ({ children }) => {
                     await AsyncStorage.setItem('driverUserData', JSON.stringify(user));
                     setUserToken(token);
                     setDriverData(user);
+                    // TODO: Initialize driver socket here if not already done by useEffect
+                    // initDriverSocket(user.userId);
                     setIsLoading(false);
                     return { success: true, user };
                 } else {
                     setIsLoading(false);
-                    const message = response.data.user?.role !== 'driver' ? "Login failed. Not a driver account." : response.data?.message;
+                    const message = response.data?.user?.role !== 'driver' ? "Login failed. Not a driver account." : response.data?.message;
                     return { success: false, error: message || "Driver login failed" };
                 }
             } catch (error) {
@@ -58,10 +59,27 @@ export const AuthProvider = ({ children }) => {
                 return { success: false, error: error.response?.data?.message || "An error occurred during driver login." };
             }
         },
-        // registerDriver will be similar, calling apiRegisterDriver
-        // For now, focusing on sign-in for dashboard access
+        signUpDriver: async (driverRegData) => {
+            setIsLoading(true);
+            try {
+                const response = await api.registerDriver(driverRegData);
+                if (response.data && (response.data.token || response.status === 201)) {
+                     setIsLoading(false);
+                    return { success: true, message: response.data.message || "Registration successful. Please login."};
+                } else {
+                    setIsLoading(false);
+                    return { success: false, error: response.data?.message || "Driver registration failed", errors: response.data?.errors };
+                }
+            } catch (error) {
+                setIsLoading(false);
+                console.error("Driver Context signUp error:", error.response?.data || error.message);
+                return { success: false, error: error.response?.data?.message || "An error occurred during driver registration.", errors: error.response?.data?.errors };
+            }
+        },
         signOutDriver: async () => {
             setIsLoading(true);
+            // TODO: Disconnect socket if using socketService
+            // disconnectDriverSocket();
             try {
                 await AsyncStorage.removeItem('driverUserToken');
                 await AsyncStorage.removeItem('driverUserData');
