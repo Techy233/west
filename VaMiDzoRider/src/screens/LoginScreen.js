@@ -12,13 +12,13 @@ import {
     Platform,
     ScrollView
 } from 'react-native';
-// import axios from 'axios'; // Or your API service
-// import AsyncStorage from '@react-native-async-storage/async-storage'; // For storing token
+import { loginUser as apiLoginUser } from '../services/api'; // Import the actual API function
+import AsyncStorage from '@react-native-async-storage/async-storage'; // For storing token
 
 // Assuming a config file for API base URL
 // import apiConfig from '../config/apiConfig';
 
-// Placeholder for a custom button component
+// Placeholder for a custom button component (can be moved to components folder)
 const CustomButton = ({ title, onPress, style, textStyle, disabled }) => (
     <TouchableOpacity onPress={onPress} style={[styles.buttonBase, style, disabled && styles.buttonDisabled]} disabled={disabled}>
         <Text style={[styles.buttonTextBase, textStyle]}>{title}</Text>
@@ -56,45 +56,36 @@ const LoginScreen = ({ navigation }) => {
         setError('');
 
         try {
-            // --- Replace with actual API call ---
-            // Example: const response = await axios.post(`${apiConfig.baseUrl}/auth/login`, {
-            //     phone_number: phoneNumber,
-            //     password: password,
-            // });
+            const response = await apiLoginUser({
+                phone_number: phoneNumber,
+                password: password,
+            });
 
-            // Simulate API Call
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            // const MOCK_TOKEN = "mock_jwt_token_for_rider";
-            // const MOCK_USER = { userId: 'rider123', phoneNumber, role: 'rider' };
+            if (response.data && response.data.token) {
+                await AsyncStorage.setItem('userToken', response.data.token);
+                // Storing the whole user object, but ensure it's what you need and not too large
+                await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
 
-            // if (response.data && response.data.token) {
-            //     await AsyncStorage.setItem('userToken', response.data.token);
-            //     await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
-
-            //     // Navigate to Home screen or main part of the app
-            //     // This depends on your navigation setup.
-            //     // Example: navigation.replace('Home'); // Or a specific stack like 'MainAppStack'
-            //     Alert.alert("Login Successful (Simulated)", `Welcome! Token: ${MOCK_TOKEN}`);
-            //     // For now, just navigate to a placeholder 'Home' if it exists in navigator
-            //     navigation.navigate('Home', { user: MOCK_USER });
-            // } else {
-            //     setError(response.data.message || 'Login failed. Please try again.');
-            // }
-            // --- End of API call section ---
-
-            // Simulated success:
-            if (phoneNumber === "0244123456" && password === "password") { // Dummy credentials
-                Alert.alert("Login Successful (Simulated)", "Welcome back!");
-                navigation.replace('Home'); // Assuming 'Home' is a route in your AppNavigator
+                Alert.alert("Login Successful!", `Welcome, ${response.data.user.phoneNumber}!`);
+                // TODO: Update AuthContext here
+                navigation.replace('Home'); // Navigate to Home screen or main part of the app
             } else {
-                 setError('Invalid credentials (simulated). Try 0244123456 / password');
+                // This else block might not be reached if apiLoginUser throws for non-2xx responses
+                setError(response.data?.message || 'Login failed. Please check your credentials.');
             }
-
-        } catch (err) {
-            console.error("Login error:", err);
-            // const errorMessage = err.response?.data?.message || err.message || 'An unexpected error occurred.';
-            // setError(errorMessage);
-            setError('An unexpected error occurred during login (simulated).');
+        } catch (apiError) {
+            console.error("Login API error:", apiError);
+            if (apiError.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                setError(apiError.response.data?.message || 'Login failed. Server error.');
+            } else if (apiError.request) {
+                // The request was made but no response was received
+                setError('Login failed. Could not connect to server. Check internet connection.');
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                setError('Login failed. An unexpected error occurred.');
+            }
         } finally {
             setIsLoading(false);
         }

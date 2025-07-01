@@ -2,22 +2,23 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const { riderRegistrationSchema, driverRegistrationSchema, loginSchema, validateRequest } = require('../validations/authValidation');
 // const authMiddleware = require('../middlewares/authMiddleware'); // To be created
 
 // @route   POST api/v1/auth/register/rider
 // @desc    Register a new rider
 // @access  Public
-router.post('/register/rider', authController.registerRider);
+router.post('/register/rider', validateRequest(riderRegistrationSchema), authController.registerRider);
 
 // @route   POST api/v1/auth/register/driver
 // @desc    Register a new driver
 // @access  Public
-router.post('/register/driver', authController.registerDriver);
+router.post('/register/driver', validateRequest(driverRegistrationSchema), authController.registerDriver);
 
 // @route   POST api/v1/auth/login
 // @desc    Login user (rider or driver)
 // @access  Public
-router.post('/login', authController.loginUser);
+router.post('/login', validateRequest(loginSchema), authController.loginUser);
 
 // @route   GET api/v1/auth/me
 // @desc    Get current logged-in user's profile

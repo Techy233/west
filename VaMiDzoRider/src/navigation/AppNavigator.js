@@ -9,7 +9,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 // Import screens (create these files in src/screens/)
 // import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen'; // Import the actual LoginScreen
-// import RegistrationScreen from '../screens/RegistrationScreen';
+import RegistrationScreen from '../screens/RegistrationScreen'; // Import the actual RegistrationScreen
 // import MapScreen from '../screens/MapScreen';
 // import RideRequestScreen from '../screens/RideRequestScreen';
 // import RideInProgressScreen from '../screens/RideInProgressScreen';
@@ -45,7 +45,7 @@ const AppNavigator = () => {
       <Stack.Navigator initialRouteName={initialRouteName}>
         {/* Authentication Stack */}
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login VaMiDzo' }} />
-        <Stack.Screen name="Register" component={PlaceholderScreen} options={{ title: 'Create Account' }} />
+        <Stack.Screen name="Register" component={RegistrationScreen} options={{ title: 'Create Rider Account' }} />
 
         {/* Main App Stack (after login) */}
         <Stack.Screen name="Home" component={PlaceholderScreen} options={{ title: 'VaMiDzo Rider' }}/>

@@ -19,23 +19,20 @@ import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 // Placeholder for Navigation
 import AppNavigator from './src/navigation/AppNavigator'; // Import the navigator
+import { AuthProvider } from './src/contexts/AuthContext'; // Import AuthProvider
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  // const isDarkMode = useColorScheme() === 'dark'; // Not needed if AuthProvider wraps everything
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-    flex: 1,
-  };
+  // const backgroundStyle = {
+  //   backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  //   flex: 1,
+  // };
 
   return (
-    // <SafeAreaView style={backgroundStyle}> // NavigationContainer often handles SafeArea
-    //   <StatusBar
-    //     barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-    //     backgroundColor={backgroundStyle.backgroundColor}
-    //   />
-      <AppNavigator /> // Render the AppNavigator
-    // </SafeAreaView>
+    <AuthProvider>
+      <AppNavigator />
+    </AuthProvider>
   );
 }
 
