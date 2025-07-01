@@ -1,0 +1,66 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn.lock
+
+# Xcode
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+ios/.xcode.env.local
+
+# Android/IntelliJ
+build/
+.idea/
+.gradle/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.jar
+*.keystore
+# Android Studio Navigation editor files
+app/src/main/res/navigation/nav_graph.xml.orig
+
+# Metro Bundler
+.metro-cache
+
+# Temporary files
+*.swp
+*~
+*.bak
+
+# Environment files
+.env
+*.env.local
+
+# Misc
+ios/Pods
+android/.gradle
+android/app/build
+/coverage
+
+# Hermes
+/android/app/build/generated/assets/hermesBinary/
+/android/app/build/intermediates/stripped_native_libs/
+/ios/build/generated/assets/hermesBinary/
+/ios/build/Build/Intermediates.noindex/욀HermesCompiler.build/
+
+# Buck
+buck-out/
+\.buckd/
+*.buckconfig.local
