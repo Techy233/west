@@ -18,6 +18,9 @@ import { createStackNavigator } from '@react-navigation/stack';
 // import ProfileScreen from '../screens/DriverProfileScreen';
 // import VehicleManagementScreen from '../screens/VehicleManagementScreen';
 // import DocumentUploadScreen from '../screens/DocumentUploadScreen';
+import DocumentUploadScreen from '../screens/DocumentUploadScreen';
+import VehicleManagementScreen from '../screens/VehicleManagementScreen';
+
 
 const Stack = createStackNavigator();
 // const Drawer = createDrawerNavigator();
@@ -62,19 +65,47 @@ const AppNavigator = () => {
         {/* Authentication Stack */}
         <Stack.Screen name="DriverLogin" component={PlaceholderScreen} options={{ title: 'Driver Login' }} />
         <Stack.Screen name="DriverRegister" component={PlaceholderScreen} options={{ title: 'Driver Registration' }} />
-        {/* <Stack.Screen name="DocumentUpload" component={PlaceholderScreen} options={{ title: 'Upload Documents' }} /> */}
+        <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ title: 'Upload Documents' }} />
+        <Stack.Screen name="VehicleManagement" component={VehicleManagementScreen} options={{ title: 'Manage Vehicle' }}/>
 
-        {/* Main App Stack (after login) */}
-        {/* Replace PlaceholderScreen with MainDriverStack or a Tab/Drawer navigator */}
-        <Stack.Screen
-          name="DriverDashboard"
-          component={PlaceholderScreen} // Replace with actual Dashboard or MainNavigator
-          options={{ title: 'VaMiDzo Driver', headerShown: true /* Or configure header for main stack */ }}
-        />
-        {/* <Stack.Screen name="Earnings" component={PlaceholderScreen} options={{ title: 'My Earnings' }} /> */}
-        {/* <Stack.Screen name="DriverProfile" component={PlaceholderScreen} options={{ title: 'My Profile' }} /> */}
-        {/* <Stack.Screen name="VehicleManagement" component={PlaceholderScreen} options={{ title: 'Manage Vehicles' }} /> */}
-      </Stack.Navigator>
+
+import DriverDashboardScreen from '../screens/DriverDashboardScreen'; // Import actual dashboard
+import SplashScreen from '../screens/SplashScreen'; // Assuming you'll create/use one
+import { useAuthDriver } from '../contexts/AuthContext'; // For checking auth state
+
+// Define Auth stack (Placeholders for now, can be fleshed out)
+const DriverAuthStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="DriverLogin" component={PlaceholderScreen} />
+    <Stack.Screen name="DriverRegister" component={PlaceholderScreen} />
+    {/* Add DocumentUpload and VehicleManagement here if part of initial registration flow */}
+  </Stack.Navigator>
+);
+
+// Define Main App stack for Driver
+const MainDriverAppStack = () => (
+  <Stack.Navigator>
+import ActiveRideScreen from '../screens/ActiveRideScreen'; // Import ActiveRideScreen
+
+    <Stack.Screen name="DriverDashboard" component={DriverDashboardScreen} options={{ title: 'Driver Dashboard' }}/>
+    <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ title: 'Upload Documents' }} />
+    <Stack.Screen name="VehicleManagement" component={VehicleManagementScreen} options={{ title: 'Manage Vehicle' }}/>
+    <Stack.Screen name="ActiveRide" component={ActiveRideScreen} options={{ title: 'Current Ride Details' }} />
+    {/* Add EarningsScreen, DriverProfileScreen etc. */}
+  </Stack.Navigator>
+);
+
+
+const AppNavigator = () => {
+  const { isAuthenticated, isLoading } = useAuthDriver(); // Use driver's auth context
+
+  if (isLoading) {
+    return <SplashScreen />; // Create SplashScreen.js similar to Rider app
+  }
+
+  return (
+    <NavigationContainer>
+      {isAuthenticated ? <MainDriverAppStack /> : <DriverAuthStack />}
     </NavigationContainer>
   );
 };

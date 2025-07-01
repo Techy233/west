@@ -1,15 +1,14 @@
-// Placeholder for AppNavigator.js
-// This file will set up the main navigation structure for the Rider app.
-// We'll use React Navigation.
-
+// VaMiDzoRider/src/navigation/AppNavigator.js
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 
-// Import screens (create these files in src/screens/)
-// import HomeScreen from '../screens/HomeScreen';
-import LoginScreen from '../screens/LoginScreen'; // Import the actual LoginScreen
-import RegistrationScreen from '../screens/RegistrationScreen'; // Import the actual RegistrationScreen
+// Import screens
+import LoginScreen from '../screens/LoginScreen';
+import RegistrationScreen from '../screens/RegistrationScreen';
+import SplashScreen from '../screens/SplashScreen'; // Import SplashScreen
+// import HomeScreen from '../screens/HomeScreen'; // Placeholder for main app screen
 // import MapScreen from '../screens/MapScreen';
 // import RideRequestScreen from '../screens/RideRequestScreen';
 // import RideInProgressScreen from '../screens/RideInProgressScreen';
@@ -36,29 +35,45 @@ const styles = StyleSheet.create({
   textSmall: { fontSize: 14, color: 'gray', marginTop: 5 },
 });
 
+// Define Auth stack
+const AuthStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Register" component={RegistrationScreen} />
+  </Stack.Navigator>
+);
+
+// Define Main App stack (placeholder for now)
+import HomeScreen from '../screens/HomeScreen'; // Import actual HomeScreen
+import ProfileScreen from '../screens/ProfileScreen'; // Import ProfileScreen
+import RequestRideScreen from '../screens/RequestRideScreen'; // Import RequestRideScreen
+import RideStatusScreen from '../screens/RideStatusScreen'; // Import RideStatusScreen
+import MapScreen from '../screens/MapScreen'; // Import MapScreen
+
+
+const MainAppStack = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'VaMiDzo Rider' }}/>
+    <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }}/>
+    <Stack.Screen name="RequestRide" component={RequestRideScreen} options={{ title: 'Request a Ride' }}/>
+    <Stack.Screen name="RideStatus" component={RideStatusScreen} options={{ title: 'Ride Status' }}/>
+    <Stack.Screen name="MapDisplay" component={MapScreen} options={{ title: 'View Map' }} />
+    {/* Add other main app screens here: RideHistoryScreen etc. */}
+  </Stack.Navigator>
+);
+
 
 const AppNavigator = () => {
-  const initialRouteName = "Login"; // Or "Home" if user is already logged in
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    // Show a splash screen or loading indicator while checking auth state
+    return <SplashScreen />;
+  }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={initialRouteName}>
-        {/* Authentication Stack */}
-        <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login VaMiDzo' }} />
-        <Stack.Screen name="Register" component={RegistrationScreen} options={{ title: 'Create Rider Account' }} />
-
-        {/* Main App Stack (after login) */}
-        <Stack.Screen name="Home" component={PlaceholderScreen} options={{ title: 'VaMiDzo Rider' }}/>
-        {/* <Stack.Screen name="MapScreen" component={PlaceholderScreen} options={{ title: 'Book a Ride' }} /> */}
-        {/* <Stack.Screen name="RideRequestScreen" component={PlaceholderScreen} options={{ title: 'Requesting Ride' }} /> */}
-        {/* <Stack.Screen name="RideInProgress" component={RideInProgressScreen} options={{ title: 'Ride in Progress' }} /> */}
-
-        {/* Other screens accessible from a menu or tabs perhaps */}
-        {/* <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }} /> */}
-        {/* <Stack.Screen name="RideHistory" component={RideHistoryScreen} options={{ title: 'Ride History' }} /> */}
-        {/* <Stack.Screen name="Payments" component={PaymentScreen} options={{ title: 'Payment Methods' }} /> */}
-        {/* Add more screens as needed */}
-      </Stack.Navigator>
+      {isAuthenticated ? <MainAppStack /> : <AuthStack />}
     </NavigationContainer>
   );
 };

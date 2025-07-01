@@ -18,15 +18,16 @@
     "react-native-maps": "1.10.0",
     "react-native-safe-area-context": "^4.8.2",
     "react-native-screens": "^3.29.0",
-    "axios": "^1.6.5",
-    "socket.io-client": "^4.7.2",
+    "axios": "^1.6.7",
+    "socket.io-client": "^4.7.4",
     "react-native-background-geolocation": "^4.14.2", // For robust background location tracking
     "react-native-document-picker": "^9.1.0", // For uploading documents
-    "react-native-image-picker": "^7.1.0" // For profile picture / vehicle picture
+    "react-native-image-picker": "^7.1.0", // For profile picture / vehicle picture
+    "@react-native-async-storage/async-storage": "^1.21.0", // Was missing, needed for AuthContext
+    "react-native-permissions": "^4.0.0", // For handling permissions
+    "react-native-geolocation-service": "^5.3.1" // For fetching current location
     // Add other necessary packages:
-    // - @react-native-async-storage/async-storage
     // - react-native-vector-icons
-    // - react-native-permissions
     // - @react-native-firebase/messaging (for push notifications to drivers)
   },
   "devDependencies": {

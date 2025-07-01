@@ -12,7 +12,8 @@ import {
     KeyboardAvoidingView,
     Platform
 } from 'react-native';
-import { registerRider as apiRegisterRider } from '../services/api'; // Import actual API function
+// import { registerRider as apiRegisterRider } from '../services/api'; // Will use context now
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth hook
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 // import apiConfig from '../config/apiConfig'; // Assuming a config file
 
@@ -45,9 +46,10 @@ const RegistrationScreen = ({ navigation }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    // const [isLoading, setIsLoading] = useState(false); // Will come from context
     const [error, setError] = useState('');
     const [fieldErrors, setFieldErrors] = useState({});
+    const { signUpRider, isLoading } = useAuth(); // Get signUpRider and isLoading from context
 
 
     const validateForm = () => {
@@ -78,63 +80,36 @@ const RegistrationScreen = ({ navigation }) => {
             setError("Please correct the errors above."); // Optional global error message
             return;
         }
+        // setIsLoading(true); // Context handles loading state
+        setFieldErrors({}); // Clear previous field errors
 
-        setIsLoading(true);
+        const result = await signUpRider({
+            first_name: firstName,
+            last_name: lastName,
+            phone_number: phoneNumber,
+            password: password,
+        });
 
-        try {
-            const response = await apiRegisterRider({
-                first_name: firstName,
-                last_name: lastName,
-                phone_number: phoneNumber,
-                password: password,
-                // profile_picture_url: null // Optional, backend handles if not provided
-            });
-
-            if (response.data && response.data.token) {
-                // Don't store token/user data here, registration should lead to login
-                Alert.alert(
-                    "Registration Successful!",
-                    "Welcome to VaMiDzo Rider! Please login to continue.",
-                    [{ text: "OK", onPress: () => navigation.navigate('Login') }]
-                );
-                // navigation.replace('Home'); // Or navigate to login and let user login
-            } else {
-                // This might not be reached if apiRegisterRider throws for non-2xx
-                setError(response.data?.message || 'Registration failed. Please try again.');
-                 if (response.data?.errors) {
-                    const backendFieldErrors = {};
-                    response.data.errors.forEach(err => {
-                        const fieldName = err.field.includes('.') ? err.field.split('.')[0] : err.field;
-                        backendFieldErrors[fieldName.replace('_','')] = err.message;
-                    });
-                    setFieldErrors(prev => ({...prev, ...backendFieldErrors}));
-                }
+        if (result && result.success) {
+            Alert.alert(
+                "Registration Successful!",
+                result.message || "Please login to continue.",
+                [{ text: "OK", onPress: () => navigation.navigate('Login') }]
+            );
+        } else {
+            setError(result.error || 'Registration failed. Please try again.');
+            if (result.errors) { // Handle field-specific errors from context/API
+                const backendFieldErrors = {};
+                result.errors.forEach(err => {
+                    const fieldName = (Array.isArray(err.field) ? err.field[0] : err.field).replace('_', '');
+                    backendFieldErrors[fieldName] = err.message;
+                });
+                setFieldErrors(backendFieldErrors);
+            } else if (result.error?.toLowerCase().includes('phone number already exists')) {
+                 setFieldErrors({phoneNumber: 'This phone number is already registered.'});
             }
-        } catch (apiError) {
-            console.error("Registration API error:", apiError);
-            if (apiError.response) {
-                setError(apiError.response.data?.message || 'Registration failed. Server error.');
-                if (apiError.response.data?.errors) {
-                    const backendFieldErrors = {};
-                    apiError.response.data.errors.forEach(err => {
-                        // Joi validation errors might have path like ['phone_number']
-                        const fieldName = Array.isArray(err.field) ? err.field[0] : err.field;
-                        backendFieldErrors[fieldName.replace('_','')] = err.message;
-                    });
-                    setFieldErrors(prev => ({...prev, ...backendFieldErrors}));
-                } else if (apiError.response.data?.detail?.includes('Users_phone_number_key')) {
-                    // Example of handling specific DB unique constraint from backend error
-                    setFieldErrors(prev => ({...prev, phoneNumber: 'This phone number is already registered.'}));
-                }
-
-            } else if (apiError.request) {
-                setError('Registration failed. Could not connect to server.');
-            } else {
-                setError('Registration failed. An unexpected error occurred.');
-            }
-        } finally {
-            setIsLoading(false);
         }
+        // setIsLoading(false); // Context handles loading state
     };
 
     return (

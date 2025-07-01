@@ -12,8 +12,9 @@ import {
     Platform,
     ScrollView
 } from 'react-native';
-import { loginUser as apiLoginUser } from '../services/api'; // Import the actual API function
-import AsyncStorage from '@react-native-async-storage/async-storage'; // For storing token
+// import { loginUser as apiLoginUser } from '../services/api'; // Will use context now
+// import AsyncStorage from '@react-native-async-storage/async-storage'; // Context handles storage
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth hook
 
 // Assuming a config file for API base URL
 // import apiConfig from '../config/apiConfig';
@@ -44,51 +45,28 @@ const CustomInput = ({ value, onChangeText, placeholder, secureTextEntry, keyboa
 const LoginScreen = ({ navigation }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    // const [isLoading, setIsLoading] = useState(false); // isLoading will come from AuthContext
     const [error, setError] = useState('');
+    const { signIn, isLoading } = useAuth(); // Get signIn function and isLoading from context
 
     const handleLogin = async () => {
         if (!phoneNumber.trim() || !password.trim()) {
             setError('Phone number and password are required.');
             return;
         }
-        setIsLoading(true);
+        // setIsLoading(true); // Context will handle its own loading state
         setError('');
 
-        try {
-            const response = await apiLoginUser({
-                phone_number: phoneNumber,
-                password: password,
-            });
+        const result = await signIn(phoneNumber, password);
 
-            if (response.data && response.data.token) {
-                await AsyncStorage.setItem('userToken', response.data.token);
-                // Storing the whole user object, but ensure it's what you need and not too large
-                await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
-
-                Alert.alert("Login Successful!", `Welcome, ${response.data.user.phoneNumber}!`);
-                // TODO: Update AuthContext here
-                navigation.replace('Home'); // Navigate to Home screen or main part of the app
-            } else {
-                // This else block might not be reached if apiLoginUser throws for non-2xx responses
-                setError(response.data?.message || 'Login failed. Please check your credentials.');
-            }
-        } catch (apiError) {
-            console.error("Login API error:", apiError);
-            if (apiError.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
-                setError(apiError.response.data?.message || 'Login failed. Server error.');
-            } else if (apiError.request) {
-                // The request was made but no response was received
-                setError('Login failed. Could not connect to server. Check internet connection.');
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                setError('Login failed. An unexpected error occurred.');
-            }
-        } finally {
-            setIsLoading(false);
+        if (result && result.success) {
+            Alert.alert("Login Successful!", `Welcome, ${result.user.phoneNumber}!`);
+            // Navigation to 'Home' will be handled by AppNavigator based on isAuthenticated state from context
+            // So, no explicit navigation.replace('Home') here is needed if AppNavigator is set up correctly.
+        } else {
+            setError(result.error || 'Login failed. Please check your credentials.');
         }
+        // setIsLoading(false); // Context handles its own loading state
     };
 
     return (
