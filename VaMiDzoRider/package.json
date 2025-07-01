@@ -18,10 +18,10 @@
     "react-native-maps": "1.10.0", // For Google Maps integration
     "react-native-safe-area-context": "^4.8.2",
     "react-native-screens": "^3.29.0",
-    "axios": "^1.6.5", // For API calls
-    "socket.io-client": "^4.7.2" // For WebSocket communication
+    "axios": "^1.6.7",
+    "socket.io-client": "^4.7.4",
+    "@react-native-async-storage/async-storage": "^1.21.0"
     // Add other necessary packages:
-    // - @react-native-async-storage/async-storage (for local storage)
     // - react-native-vector-icons (for icons)
     // - react-native-permissions (for handling permissions like location)
     // - react-native-geolocation-service (alternative for geolocation)

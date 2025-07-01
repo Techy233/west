@@ -23,13 +23,13 @@ const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 // const rideRoutes = require('./routes/rideRoutes');
 // const driverRoutes = require('./routes/driverRoutes');
-// const userRoutes = require('./routes/userRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
 // app.use('/api/v1/rides', rideRoutes);
 // app.use('/api/v1/drivers', driverRoutes);
-// app.use('/api/v1/users', userRoutes);
 
 
 // Error Handling Middleware (Simple example, can be more sophisticated)
