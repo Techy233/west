@@ -110,4 +110,10 @@ export const updateUserVehicle = (vehicleData) => {
 // Add more API service methods as needed for rides, etc.
 // export const requestRide = (rideDetails) => apiClient.post('/rides', rideDetails);
 
+export const getNearbyDrivers = (latitude, longitude, radius = 5) => { // Default radius 5km
+    return apiClient.get('/drivers/nearby', {
+        params: { latitude, longitude, radius }
+    });
+};
+
 export default apiClient; // Exporting the configured axios instance if direct use is preferred somewhere

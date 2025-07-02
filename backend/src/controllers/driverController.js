@@ -25,3 +25,23 @@ exports.setAvailability = async (req, res) => {
 
 // Other driver-specific controllers can be added here later
 // e.g., getDriverStats, getDriverEarnings, etc.
+
+/**
+ * Controller to get nearby available drivers.
+ * Expects latitude, longitude, and optional radius in query params.
+ */
+exports.getNearbyDrivers = async (req, res) => {
+    const { latitude, longitude, radius } = req.query; // Joi validation handles parsing to number
+
+    try {
+        const nearbyDrivers = await driverService.findNearbyAvailableDrivers(
+            parseFloat(latitude),
+            parseFloat(longitude),
+            radius ? parseFloat(radius) : 5 // Default radius if not provided by Joi default
+        );
+        res.status(200).json(nearbyDrivers);
+    } catch (error) {
+        console.error('Error getting nearby drivers (controller):', error);
+        res.status(500).json({ message: error.message || "Server error while fetching nearby drivers." });
+    }
+};

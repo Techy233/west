@@ -58,40 +58,62 @@ async function createRideRequest(riderId, rideData, reqApp) {
     let newRide = result.rows[0];
     let message = "Ride requested successfully. Searching for available drivers...";
 
-    // Basic Driver Matching Logic
-    try {
-        const availableDrivers = await db.query(
-            "SELECT driver_id FROM Drivers WHERE is_available = TRUE AND is_verified = TRUE ORDER BY last_location_update DESC LIMIT 10"
-        );
-        if (availableDrivers.rows.length > 0) {
-            const assignedDriver = availableDrivers.rows[0]; // Simplistic assignment
-            const updateRideWithDriver = await db.query(
-                "UPDATE Rides SET driver_id = $1, updated_at = NOW() WHERE ride_id = $2 RETURNING *",
-                [assignedDriver.driver_id, newRide.ride_id]
-            );
-            if (updateRideWithDriver.rows.length > 0) {
-                newRide = updateRideWithDriver.rows[0]; // Update newRide with driver_id
-                message = `Ride requested successfully! Driver ${assignedDriver.driver_id.substring(0,8)}... has been notified. Awaiting driver acceptance.`;
+    // Location-Based Driver Matching Logic
+    const MAX_SEARCH_RADIUS_KM = 10; // Define a search radius (e.g., 10 km)
 
-                // Notify driver via WebSocket
-                const io = reqApp.get('socketio');
-                const driverSockets = reqApp.get('driverSockets');
-                const driverSocketId = driverSockets.get(assignedDriver.driver_id);
-                if (driverSocketId && io) {
-                    io.to(driverSocketId).emit('new_ride_request', newRide);
-                    console.log(`Ride request ${newRide.ride_id} sent to driver ${assignedDriver.driver_id} via socket ${driverSocketId}`);
+    try {
+        // Fetch all available and verified drivers with their locations
+        // Note: In a very large system, fetching ALL available drivers might be too much.
+        // You might pre-filter by region or use a geospatial index if DB supports it.
+        const allAvailableDriversResult = await db.query(
+            "SELECT driver_id, current_latitude, current_longitude FROM Drivers WHERE is_available = TRUE AND is_verified = TRUE AND current_latitude IS NOT NULL AND current_longitude IS NOT NULL"
+        );
+
+        if (allAvailableDriversResult.rows.length > 0) {
+            const nearbyDrivers = allAvailableDriversResult.rows
+                .map(driver => {
+                    const dist = haversineDistance(
+                        pickup_latitude, pickup_longitude,
+                        driver.current_latitude, driver.current_longitude
+                    );
+                    return { ...driver, distance: dist };
+                })
+                .filter(driver => driver.distance <= MAX_SEARCH_RADIUS_KM)
+                .sort((a, b) => a.distance - b.distance); // Sort by distance, closest first
+
+            if (nearbyDrivers.length > 0) {
+                const assignedDriver = nearbyDrivers[0]; // Assign the closest driver
+                const updateRideWithDriver = await db.query(
+                    "UPDATE Rides SET driver_id = $1, updated_at = NOW() WHERE ride_id = $2 RETURNING *",
+                    [assignedDriver.driver_id, newRide.ride_id]
+                );
+
+                if (updateRideWithDriver.rows.length > 0) {
+                    newRide = updateRideWithDriver.rows[0];
+                    message = `Ride requested successfully! Driver ${assignedDriver.driver_id.substring(0,8)}... (approx. ${assignedDriver.distance.toFixed(1)}km away) has been notified. Awaiting acceptance.`;
+
+                    const io = reqApp.get('socketio');
+                    const driverSockets = reqApp.get('driverSockets');
+                    const driverSocketId = driverSockets.get(assignedDriver.driver_id);
+                    if (driverSocketId && io) {
+                        io.to(driverSocketId).emit('new_ride_request', newRide);
+                        console.log(`Ride request ${newRide.ride_id} sent to driver ${assignedDriver.driver_id} (socket ${driverSocketId})`);
+                    } else {
+                        console.log(`Driver ${assignedDriver.driver_id} not connected for ride ${newRide.ride_id}.`);
+                    }
                 } else {
-                    console.log(`Driver ${assignedDriver.driver_id} not connected. Ride ${newRide.ride_id} assigned but not sent in real-time.`);
+                     message = "Ride requested. Found nearby drivers, but assignment failed. Still searching...";
                 }
             } else {
-                 message = "Ride requested. Could not immediately assign a driver, still searching...";
+                message = "Ride requested successfully. No drivers found within your immediate vicinity. Expanding search...";
+                 console.log(`No drivers found within ${MAX_SEARCH_RADIUS_KM}km for ride ${newRide.ride_id}`);
             }
         } else {
             message = "Ride requested successfully. No drivers currently available. Please wait or try again later.";
+            console.log(`No available/verified drivers found at all for ride ${newRide.ride_id}`);
         }
     } catch (matchError) {
-        console.error('Error during driver matching/assignment in service:', matchError);
-        // Ride is created, but matching failed. Message already reflects searching.
+        console.error('Error during location-based driver matching/assignment in service:', matchError);
     }
     return { ride: newRide, message };
 }

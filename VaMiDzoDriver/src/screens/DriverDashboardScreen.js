@@ -5,6 +5,8 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
+import { AppState } from 'react-native'; // Import AppState
+
 // Helper to calculate map region from markers (can be moved to a utils file)
 const getRegionForCoordinates = (points) => {
     if (!points || points.length === 0) return null;
@@ -52,6 +54,8 @@ const DriverDashboardScreen = ({ navigation }) => {
     const [driverMapLocation, setDriverMapLocation] = useState(null); // For driver's marker
     const [locationPermissionStatus, setLocationPermissionStatus] = useState(null);
     const mapRef = useRef(null);
+    const locationWatchId = useRef(null); // To store the watchId for geolocation
+    const appState = useRef(AppState.currentState); // To track app state
 
     const driverId = driverData?.userId;
 
@@ -95,23 +99,89 @@ const DriverDashboardScreen = ({ navigation }) => {
             }
         };
         initLocation();
-    }, []);
 
-
-    // --- Socket Logic ---
-    useEffect(() => {
-        if (driverId) {
-            const s = initSocket(driverId);
-            setSocket(s);
-            return () => {
-                if (s) {
-                    s.off('new_ride_request', handleNewRideRequest);
-                    disconnectSocket();
+        // AppState listener for foreground/background changes
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+                console.log('App has come to the foreground!');
+                // Re-check permissions or re-start services if needed
+                if (locationPermissionStatus === RESULTS.GRANTED || locationPermissionStatus === 'granted') {
+                    // getCurrentDriverLocation(); // Optionally refresh location immediately
                 }
-                setSocket(null);
-            };
+            }
+            appState.current = nextAppState;
+            console.log('AppState', appState.current);
+        });
+        return () => {
+            subscription.remove();
+        };
+
+    }, []); // Empty dependency array, runs once on mount for permissions
+
+    // --- Location Watching and Socket Update Logic ---
+    useEffect(() => {
+        if (availability && driverId && (locationPermissionStatus === RESULTS.GRANTED || locationPermissionStatus === 'granted')) {
+            console.log("Starting location watch for driver:", driverId);
+            locationWatchId.current = Geolocation.watchPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    console.log("Driver new location:", latitude, longitude);
+                    setDriverMapLocation({ latitude, longitude }); // Update local map marker
+
+                    // Animate map to new location only if it's significantly different or first time
+                    // For now, let's not auto-animate on every watch update to avoid jerky map if driver is moving map manually.
+                    // if (mapRef.current) mapRef.current.animateToRegion({ ...currentMapRegion, latitude, longitude }, 500);
+
+                    const currentSocket = getSocket();
+                    if (currentSocket && currentSocket.connected) {
+                        currentSocket.emit('driver_location_update', { driverId, latitude, longitude });
+                    }
+                },
+                (error) => {
+                    console.log("Geolocation watchPosition Error:", error.code, error.message);
+                },
+                {
+                    enableHighAccuracy: true,
+                    distanceFilter: 10, // Update if location changes by 10 meters
+                    interval: 10000, // Try to get update every 10 seconds (actively)
+                    fastestInterval: 5000, // Get update as fast as 5 seconds if available from other apps
+                    showsBackgroundLocationIndicator: true, // For iOS, if background permission granted
+                }
+            );
+        } else {
+            if (locationWatchId.current !== null) {
+                console.log("Stopping location watch for driver:", driverId);
+                Geolocation.clearWatch(locationWatchId.current);
+                locationWatchId.current = null;
+            }
         }
-    }, [driverId]);
+        return () => { // Cleanup on unmount or when dependencies change
+            if (locationWatchId.current !== null) {
+                console.log("Cleaning up location watch for driver:", driverId);
+                Geolocation.clearWatch(locationWatchId.current);
+                locationWatchId.current = null;
+            }
+        };
+    }, [availability, driverId, locationPermissionStatus]); // Rerun if availability, driverId, or permission status changes
+
+
+    // --- Socket Connection & Event Listener Logic ---
+    useEffect(() => {
+        let s; // Define s here to be accessible in cleanup
+        if (driverId) {
+            s = initSocket(driverId);
+            setSocket(s); // Keep local socket state if needed by other parts of component
+        }
+        // Cleanup function
+        return () => {
+            if (s) { // Use the 's' captured in this effect's closure
+                console.log("Dashboard unmounting / driverId changed: Cleaning up main socket instance and listeners");
+                s.off('new_ride_request', handleNewRideRequest); // Ensure specific listener is off
+                disconnectSocket(); // This will disconnect the global socket instance from socketService
+            }
+            setSocket(null); // Reset local socket state
+        };
+    }, [driverId]); // Only re-run if driverId changes
 
 
     const handleNewRideRequest = useCallback((rideDetails) => {

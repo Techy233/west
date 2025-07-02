@@ -8,8 +8,9 @@ import {
     getSocket,
     onRideAccepted, offRideAccepted,
     onRideStatusUpdated, offRideStatusUpdated,
-    onRideCancelledByDriver, offRideCancelledByDriver
-} from '../services/socketService'; // Import socket listeners
+    onRideCancelledByDriver, offRideCancelledByDriver,
+    onActiveRideDriverLocation, offActiveRideDriverLocation // Import new listeners
+} from '../services/socketService';
 
 // Reusable Button
 const CustomButton = ({ title, onPress, style, textStyle, disabled }) => (
@@ -53,22 +54,28 @@ const RideStatusScreen = ({ route, navigation }) => {
     const [error, setError] = useState('');
     const mapRef = useRef(null);
     const [mapRegion, setMapRegion] = useState(null);
+    const [driverLiveLocation, setDriverLiveLocation] = useState(null); // For live driver marker
 
-    useEffect(() => { // Effect to set map region when rideDetails are available
+    useEffect(() => {
         if (rideDetails?.pickup_latitude && rideDetails?.dropoff_latitude) {
             const points = [
                 { latitude: rideDetails.pickup_latitude, longitude: rideDetails.pickup_longitude },
                 { latitude: rideDetails.dropoff_latitude, longitude: rideDetails.dropoff_longitude },
             ];
-            if (rideDetails.driver?.current_latitude && rideDetails.driver?.current_longitude) { // If driver location is available
-                points.push({ latitude: rideDetails.driver.current_latitude, longitude: rideDetails.driver.current_longitude });
+            // Use driverLiveLocation if available, otherwise fall back to initial driver location from rideDetails
+            const driverLoc = driverLiveLocation || (rideDetails.driver && {latitude: rideDetails.driver.current_latitude, longitude: rideDetails.driver.current_longitude});
+
+            if (driverLoc?.latitude && driverLoc?.longitude) {
+                points.push({ latitude: driverLoc.latitude, longitude: driverLoc.longitude });
             }
             const region = getRegionForCoordinates(points);
             if (region) {
                 setMapRegion(region);
+                 // Optionally animate map to fit all markers if mapRef is available
+                // if(mapRef.current) mapRef.current.animateToRegion(region, 500);
             }
         }
-    }, [rideDetails]);
+    }, [rideDetails, driverLiveLocation]); // Re-calculate region if rideDetails or driverLiveLocation changes
 
 
     const fetchRideStatus = async () => {
@@ -133,17 +140,31 @@ const RideStatusScreen = ({ route, navigation }) => {
             onRideStatusUpdated(handleRideStatusUpdate);
             onRideCancelledByDriver(handleRideCancelledByDrv);
 
+            const handleDriverLocationUpdate = (locationData) => {
+                console.log('RideStatusScreen: active_ride_driver_location event', locationData);
+                if (locationData.rideId === rideId) {
+                    setDriverLiveLocation({
+                        latitude: locationData.latitude,
+                        longitude: locationData.longitude,
+                    });
+                    // Optionally, update rideDetails.driver if it holds static initial location
+                    // setRideDetails(prev => ({
+                    //     ...prev,
+                    //     driver: { ...prev.driver, current_latitude: locationData.latitude, current_longitude: locationData.longitude }
+                    // }));
+                }
+            };
+            onActiveRideDriverLocation(handleDriverLocationUpdate);
+
             // Remove polling if WebSockets are primary
-            // const intervalId = setInterval(() => {
-            //     console.log("Polling for ride status update...");
-            //     fetchRideStatus();
-            // }, 15000);
+            // const intervalId = setInterval(() => { fetchRideStatus(); }, 15000);
 
             return () => {
                 // clearInterval(intervalId);
                 offRideAccepted(handleRideAccepted);
                 offRideStatusUpdated(handleRideStatusUpdate);
                 offRideCancelledByDriver(handleRideCancelledByDrv);
+                offActiveRideDriverLocation(handleDriverLocationUpdate); // Unsubscribe
             };
         }
     }, [rideId]);
@@ -232,14 +253,15 @@ const RideStatusScreen = ({ route, navigation }) => {
                         description={rideDetails.dropoff_address_text}
                         pinColor="red"
                     />
-                    {/* TODO: Add Driver's marker when location is available in rideDetails.driver */}
-                    {/* {rideDetails.driver?.current_latitude && rideDetails.driver?.current_longitude && (
+                    {driverLiveLocation && (
                         <Marker
-                            coordinate={{ latitude: rideDetails.driver.current_latitude, longitude: rideDetails.driver.current_longitude }}
-                            title={`Driver ${rideDetails.driver.first_name || ''}`}
+                            coordinate={driverLiveLocation}
+                            title={`Driver ${rideDetails.driver?.first_name || 'Location'}`}
+                            description="Driver's current location"
                             pinColor="blue"
+                            // image={require('../assets/driver_car_icon.png')} // Custom driver icon
                         />
-                    )} */}
+                    )}
                 </MapView>
             )}
 

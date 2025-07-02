@@ -91,4 +91,11 @@ export const offRideCancelledByDriver = (callback) => {
 };
 
 // Add more event listener helpers as needed
-// e.g., for driver location updates, chat messages, etc.
+// e.g., for chat messages, etc.
+
+export const onActiveRideDriverLocation = (callback) => {
+  if (socket) socket.on('active_ride_driver_location', callback);
+};
+export const offActiveRideDriverLocation = (callback) => {
+  if (socket) socket.off('active_ride_driver_location', callback);
+};
