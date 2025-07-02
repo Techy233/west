@@ -8,6 +8,9 @@ yarn-error.log
 *.env.local
 *.env.*.local
 
+# Service Account Keys
+src/config/firebase-service-account.json
+
 # Production files (if any specific build outputs not meant for repo)
 # dist/
 # build/

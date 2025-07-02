@@ -36,11 +36,14 @@ const upload = multer({
 });
 // End Multer setup
 
+const { userProfileUpdateSchema, deviceTokenSchema } = require('../validations/userValidation');
+const { vehicleUpdateSchema } = require('../validations/driverValidation'); // Assuming vehicle schema is in driverValidation
+
 
 // @route   PUT api/v1/users/me
 // @desc    Update current logged-in user's profile (name, etc.)
 // @access  Private (any authenticated user)
-router.put('/me', protect, userController.updateMyProfile);
+router.put('/me', protect, validateRequest(userProfileUpdateSchema), userController.updateMyProfile);
 
 // @route   POST api/v1/users/me/profile-picture
 // @desc    Update current logged-in user's profile picture
@@ -66,7 +69,17 @@ router.post(
 // @route   PUT api/v1/users/me/vehicle
 // @desc    Update current logged-in driver's vehicle information
 // @access  Private (Driver role only)
-router.put('/me/vehicle', protect, authorize('driver'), userController.updateMyVehicleInfo);
+router.put('/me/vehicle', protect, authorize('driver'), validateRequest(vehicleUpdateSchema), userController.updateMyVehicleInfo);
+
+// @route   POST api/v1/users/me/device-token
+// @desc    Add or update a device token for push notifications for the current user
+// @access  Private (any authenticated user)
+router.post(
+    '/me/device-token',
+    protect,
+    validateRequest(deviceTokenSchema),
+    userController.addOrUpdateDeviceToken
+);
 
 
 module.exports = router;

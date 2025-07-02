@@ -86,10 +86,10 @@ const DriverAuthStack = () => (
 );
 
 // Define Main App stack for Driver
-const MainDriverAppStack = () => (
-  <Stack.Navigator>
 import ActiveRideScreen from '../screens/ActiveRideScreen'; // Import ActiveRideScreen
 
+const MainDriverAppStack = () => (
+  <Stack.Navigator>
     <Stack.Screen name="DriverDashboard" component={DriverDashboardScreen} options={{ title: 'Driver Dashboard' }}/>
     <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} options={{ title: 'Upload Documents' }} />
     <Stack.Screen name="VehicleManagement" component={VehicleManagementScreen} options={{ title: 'Manage Vehicle' }}/>
@@ -99,15 +99,15 @@ import ActiveRideScreen from '../screens/ActiveRideScreen'; // Import ActiveRide
 );
 
 
-const AppNavigator = () => {
-  const { isAuthenticated, isLoading } = useAuthDriver(); // Use driver's auth context
+const AppNavigator = ({ navigationRef }) => { // Accept navigationRef
+  const { isAuthenticated, isLoading } = useAuthDriver();
 
   if (isLoading) {
-    return <SplashScreen />; // Create SplashScreen.js similar to Rider app
+    return <SplashScreen />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}> {/* Use ref */}
       {isAuthenticated ? <MainDriverAppStack /> : <DriverAuthStack />}
     </NavigationContainer>
   );

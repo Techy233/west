@@ -148,4 +148,21 @@ CREATE TRIGGER set_timestamp_payments BEFORE UPDATE ON Payments FOR EACH ROW EXE
 -- This setup is more advanced and can be added when implementing location services.
 -- For MVP, current_latitude and current_longitude can be used with Haversine or similar math.
 
+-- UserDeviceTokens table: Stores FCM/APNS device tokens for users for push notifications
+CREATE TYPE DEVICE_TYPE AS ENUM ('android', 'ios', 'web');
+
+CREATE TABLE UserDeviceTokens (
+    token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,
+    device_token TEXT NOT NULL,
+    device_type DEVICE_TYPE, -- Type of device (android, ios, web)
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_used_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, device_token) -- A user can have multiple tokens, but each token for a user is unique
+);
+
+CREATE INDEX idx_userdevicetokens_user_id ON UserDeviceTokens(user_id);
+CREATE INDEX idx_userdevicetokens_device_token ON UserDeviceTokens(device_token); -- For quick lookup if a token needs to be invalidated
+
+
 -- End of schema

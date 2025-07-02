@@ -1,5 +1,7 @@
 // backend/src/services/rideService.js
 const db = require('../config/db');
+const { getUserDeviceTokens } = require('./userService'); // For fetching device tokens
+const { sendPushNotification, isFirebaseInitialized } = require('./firebaseService'); // For sending notifications
 
 // --- Helper Functions (can be moved to a utils/geo.js or similar) ---
 function haversineDistance(lat1, lon1, lat2, lon2) {

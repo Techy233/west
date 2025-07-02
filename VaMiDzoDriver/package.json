@@ -23,12 +23,13 @@
     "react-native-background-geolocation": "^4.14.2", // For robust background location tracking
     "react-native-document-picker": "^9.1.0", // For uploading documents
     "react-native-image-picker": "^7.1.0", // For profile picture / vehicle picture
-    "@react-native-async-storage/async-storage": "^1.21.0", // Was missing, needed for AuthContext
-    "react-native-permissions": "^4.0.0", // For handling permissions
-    "react-native-geolocation-service": "^5.3.1" // For fetching current location
+    "@react-native-async-storage/async-storage": "^1.21.0",
+    "react-native-permissions": "^4.0.0",
+    "react-native-geolocation-service": "^5.3.1",
+    "@react-native-firebase/app": "^18.8.0", // Firebase core
+    "@react-native-firebase/messaging": "^18.8.0" // Firebase Cloud Messaging
     // Add other necessary packages:
     // - react-native-vector-icons
-    // - @react-native-firebase/messaging (for push notifications to drivers)
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

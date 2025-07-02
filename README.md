@@ -186,6 +186,25 @@ You will need to obtain Google Maps API keys from the Google Cloud Console and e
 *   Ensure you have the "Places API" enabled in your Google Cloud Console project associated with the API key you are using for maps.
 *   The component typically uses the same API key configured for Google Maps.
 
+**Push Notifications (`@react-native-firebase/app` & `@react-native-firebase/messaging`):**
+
+Setting up Firebase for push notifications involves several native configuration steps for both iOS and Android. Please follow the detailed instructions on the official React Native Firebase documentation:
+[https://rnfirebase.io/messaging/usage#native-setup](https://rnfirebase.io/messaging/usage#native-setup)
+
+*   **General Steps:**
+    1.  Ensure you have a Firebase project created (see Backend Setup Step 1.2).
+    2.  Add Android and iOS apps to your Firebase project.
+*   **iOS:**
+    1.  Download `GoogleService-Info.plist` from your Firebase project settings and add it to your Xcode project (usually via "Add files to 'YourProjectName'").
+    2.  Ensure Firebase SDKs are correctly linked via Cocoapods: run `cd ios && pod install`.
+    3.  Follow instructions for modifying `AppDelegate.m` or `AppDelegate.swift` to initialize Firebase and handle notification registration. This often includes adding code like `[FIRApp configure];` and potentially `UNUserNotificationCenter` delegate methods.
+    4.  Enable "Push Notifications" and "Background Modes" (Remote notifications) capabilities in Xcode for your app target.
+    5.  Upload your APNs Authentication Key or Certificates to Firebase project settings under Cloud Messaging -> iOS app configuration.
+*   **Android:**
+    1.  Download `google-services.json` from your Firebase project settings and place it in the `android/app/` directory of your React Native project.
+    2.  Add the Google Services plugin and Firebase SDK dependencies to your `android/build.gradle` (project-level) and `android/app/build.gradle` (app-level) files as per the documentation.
+    3.  Ensure your app's `minSdkVersion` is compatible.
+
 ## 7. Running Backend Tests
 
 1.  **Navigate to the backend directory:**

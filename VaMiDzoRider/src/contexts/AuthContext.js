@@ -2,7 +2,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginUser as apiLoginUser, registerRider as apiRegisterRider } from '../services/api';
-import { initSocket as initRiderSocket, disconnectSocket as disconnectRiderSocket } from '../services/socketService'; // Import socket functions
+import { initSocket as initRiderSocket, disconnectSocket as disconnectRiderSocket } from '../services/socketService';
+import { getAndSendDeviceToken, onTokenRefreshListener } from '../services/notificationService'; // Import notification functions
 
 const AuthContext = createContext(null);
 
@@ -23,10 +24,13 @@ export const AuthProvider = ({ children }) => {
                     const parsedUserData = JSON.parse(storedUserData);
                     setUserToken(token);
                     setUserData(parsedUserData);
-                    initRiderSocket(parsedUserData.userId); // Initialize socket with rider ID
+                    if (parsedUserData.userId) {
+                        initRiderSocket(parsedUserData.userId);
+                        getAndSendDeviceToken(parsedUserData.userId); // Get/send FCM token
+                    }
                 }
             } catch (e) {
-                console.error("Restoring token failed", e);
+                console.error("Restoring rider token failed", e);
                 await AsyncStorage.removeItem('userToken');
                 await AsyncStorage.removeItem('userData');
             }
@@ -49,7 +53,8 @@ export const AuthProvider = ({ children }) => {
                     setUserToken(token);
                     setUserData(user);
                     if (user.userId) {
-                        initRiderSocket(user.userId); // Initialize socket on login
+                        initRiderSocket(user.userId);
+                        getAndSendDeviceToken(user.userId); // Get/send FCM token on login
                     }
                     setIsLoading(false);
                     return { success: true, user };

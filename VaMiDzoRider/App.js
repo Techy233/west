@@ -19,19 +19,37 @@ import {Colors} from 'react-native/Libraries/NewAppScreen';
 
 // Placeholder for Navigation
 import AppNavigator from './src/navigation/AppNavigator'; // Import the navigator
-import { AuthProvider } from './src/contexts/AuthContext'; // Import AuthProvider
+import { AuthProvider } from './src/contexts/AuthContext';
+import { onTokenRefreshListener, onForegroundMessageListener, onNotificationOpenedAppListener, getInitialNotification } from './src/services/notificationService';
+import { useNavigationContainerRef } from '@react-navigation/native'; // For navigation from outside components
 
 function App() {
-  // const isDarkMode = useColorScheme() === 'dark'; // Not needed if AuthProvider wraps everything
+  const navigationRef = useNavigationContainerRef(); // Ref to pass to notification handlers
 
-  // const backgroundStyle = {
-  //   backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  //   flex: 1,
-  // };
+  useEffect(() => {
+    // Set up foreground message handler
+    const unsubscribeForeground = onForegroundMessageListener();
+
+    // Set up handler for when app is opened from a notification (background state)
+    const unsubscribeOpenedApp = onNotificationOpenedAppListener(navigationRef);
+
+    // Check if app was opened from a notification (quit state)
+    getInitialNotification(navigationRef);
+
+    // Set up token refresh listener
+    const unsubscribeTokenRefresh = onTokenRefreshListener();
+
+    return () => {
+      unsubscribeForeground();
+      unsubscribeOpenedApp();
+      unsubscribeTokenRefresh();
+    };
+  }, []);
+
 
   return (
     <AuthProvider>
-      <AppNavigator />
+      <AppNavigator navigationRef={navigationRef} /> {/* Pass ref to AppNavigator */}
     </AuthProvider>
   );
 }

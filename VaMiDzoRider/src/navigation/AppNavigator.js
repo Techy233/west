@@ -1,8 +1,9 @@
 // VaMiDzoRider/src/navigation/AppNavigator.js
 import React from 'react';
+// Remove useNavigationContainerRef if imported here, it's used in App.js
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+import { useAuth } from '../contexts/AuthContext';
 
 // Import screens
 import LoginScreen from '../screens/LoginScreen';
@@ -63,16 +64,15 @@ const MainAppStack = () => (
 );
 
 
-const AppNavigator = () => {
+const AppNavigator = ({ navigationRef }) => { // Accept navigationRef as a prop
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    // Show a splash screen or loading indicator while checking auth state
     return <SplashScreen />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}> {/* Use the ref here */}
       {isAuthenticated ? <MainAppStack /> : <AuthStack />}
     </NavigationContainer>
   );

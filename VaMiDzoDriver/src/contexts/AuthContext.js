@@ -1,8 +1,9 @@
 // VaMiDzoDriver/src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Assuming you'll create a similar api.js for the driver app
-import * as api from '../services/api'; // Import all from api service
+import * as api from '../services/api';
+import { initSocket as initDriverSocket, disconnectSocket as disconnectDriverSocket } from '../services/socketService'; // Import socket functions
+import { getAndSendDeviceToken, onTokenRefreshListener } from '../services/notificationService'; // Import notification functions for Driver app
 
 const AuthContext = createContext(null);
 
@@ -19,8 +20,13 @@ export const AuthProvider = ({ children }) => {
                 token = await AsyncStorage.getItem('driverUserToken'); // Use a different key for driver
                 storedDriverData = await AsyncStorage.getItem('driverUserData');
                 if (token && storedDriverData) {
+                    const parsedDriverData = JSON.parse(storedDriverData);
                     setUserToken(token);
-                    setDriverData(JSON.parse(storedDriverData));
+                    setDriverData(parsedDriverData);
+                    if (parsedDriverData.userId) {
+                        initDriverSocket(parsedDriverData.userId); // Initialize socket
+                        getAndSendDeviceToken(parsedDriverData.userId); // Get/send FCM token
+                    }
                 }
             } catch (e) {
                 console.error("Restoring driver token failed", e);
@@ -44,8 +50,10 @@ export const AuthProvider = ({ children }) => {
                     await AsyncStorage.setItem('driverUserData', JSON.stringify(user));
                     setUserToken(token);
                     setDriverData(user);
-                    // TODO: Initialize driver socket here if not already done by useEffect
-                    // initDriverSocket(user.userId);
+                    if (user.userId) {
+                        initDriverSocket(user.userId);
+                        getAndSendDeviceToken(user.userId); // Get/send FCM token on login
+                    }
                     setIsLoading(false);
                     return { success: true, user };
                 } else {
@@ -62,7 +70,7 @@ export const AuthProvider = ({ children }) => {
         signUpDriver: async (driverRegData) => {
             setIsLoading(true);
             try {
-                const response = await api.registerDriver(driverRegData);
+                const response = await api.registerDriver(driverRegData); // Uses api.registerDriver now
                 if (response.data && (response.data.token || response.status === 201)) {
                      setIsLoading(false);
                     return { success: true, message: response.data.message || "Registration successful. Please login."};
@@ -78,8 +86,7 @@ export const AuthProvider = ({ children }) => {
         },
         signOutDriver: async () => {
             setIsLoading(true);
-            // TODO: Disconnect socket if using socketService
-            // disconnectDriverSocket();
+            disconnectDriverSocket(); // Disconnect socket on sign out
             try {
                 await AsyncStorage.removeItem('driverUserToken');
                 await AsyncStorage.removeItem('driverUserData');
@@ -91,7 +98,7 @@ export const AuthProvider = ({ children }) => {
             setIsLoading(false);
         },
         userToken,
-        driverData, // Specifically driverData
+        driverData,
         isAuthenticated: !!userToken, // Based on driver's token
         isLoading
     };

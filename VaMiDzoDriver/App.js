@@ -4,16 +4,36 @@
  * @format
  */
 
-import React from 'react';
-import AppNavigator from './src/navigation/AppNavigator'; // Import the navigator
-
-import { AuthProvider } from './src/contexts/AuthContext'; // Import AuthProvider for Driver
+import React, { useEffect } from 'react'; // Added useEffect
+import AppNavigator from './src/navigation/AppNavigator';
+import { AuthProvider } from './src/contexts/AuthContext';
+import {
+    onTokenRefreshListener,
+    onForegroundMessageListener,
+    onNotificationOpenedAppListener,
+    getInitialNotification
+} from './src/services/notificationService'; // For Driver app
+import { useNavigationContainerRef } from '@react-navigation/native';
 
 function App() {
-  // Basic structure, NavigationContainer will handle SafeArea and StatusBar for the most part
+  const navigationRef = useNavigationContainerRef();
+
+  useEffect(() => {
+    const unsubscribeForeground = onForegroundMessageListener();
+    const unsubscribeOpenedApp = onNotificationOpenedAppListener(navigationRef);
+    getInitialNotification(navigationRef);
+    const unsubscribeTokenRefresh = onTokenRefreshListener();
+
+    return () => {
+      unsubscribeForeground();
+      unsubscribeOpenedApp();
+      unsubscribeTokenRefresh();
+    };
+  }, []);
+
   return (
     <AuthProvider>
-      <AppNavigator />
+      <AppNavigator navigationRef={navigationRef} /> {/* Pass ref */}
     </AuthProvider>
   );
 }
